@@ -1451,12 +1451,44 @@ app.post("/api/uploads/initiate", async (req, res) => {
     updatedAt: createdAt
   };
 
+  try {
+    if (typeof metadataStore.upsertUploadInitiation === "function") {
+      await metadataStore.upsertUploadInitiation({
+        transfer: publicTransfer(transfer),
+        upload: durableUpload(upload)
+      });
+    } else {
+      await metadataStore.upsert("transfers", publicTransfer(transfer));
+      await metadataStore.upsert("uploadSessions", durableUpload(upload));
+    }
+  } catch (error) {
+    logger.error("upload initiate metadata write failed", {
+      requestId: req.id,
+      transferId,
+      uploadId,
+      error
+    });
+    await storage.abortMultipartUpload({
+      uploadId,
+      providerUploadId: upload.providerUploadId,
+      storageKey
+    }).catch((abortError) => {
+      logger.error("storage multipart upload abort after metadata failure failed", {
+        requestId: req.id,
+        transferId,
+        uploadId,
+        error: abortError
+      });
+    });
+    return sendError(res, 500, "Upload metadata could not be saved.", {
+      code: "UPLOAD_METADATA_WRITE_FAILED"
+    });
+  }
+
   transfers.set(transfer.id, transfer);
   uploadSessions.set(upload.id, upload);
   session.transferIds.add(transfer.id);
 
-  persist(metadataStore.upsert("transfers", publicTransfer(transfer)), "transfer metadata write failed");
-  persist(metadataStore.upsert("uploadSessions", durableUpload(upload)), "upload session metadata write failed");
   persist(metadataStore.addAudit({
     type: "upload.initiated",
     sessionId: session.id,

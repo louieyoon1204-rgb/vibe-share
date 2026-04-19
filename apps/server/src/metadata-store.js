@@ -127,6 +127,10 @@ function createJsonMetadataStore(filePath, { fallbackFrom = null } = {}) {
     remove,
     list,
     addAudit,
+    upsertUploadInitiation: async ({ transfer, upload }) => ({
+      transfer: upsert("transfers", transfer),
+      upload: upsert("uploadSessions", upload)
+    }),
     health,
     close: async () => save()
   };
@@ -145,14 +149,14 @@ async function createPostgresMetadataStore(config, logger) {
     return pool.query(sql, params);
   }
 
-  async function upsert(collection, record) {
+  async function upsert(collection, record, executor = query) {
     const id = record.id || crypto.randomUUID();
     const nowDate = new Date(record.updatedAt || Date.now());
     const createdAt = toDate(record.createdAt) || nowDate;
 
     try {
       if (collection === "users") {
-        await query(
+        await executor(
           `insert into users (id, email, display_name, anonymous, created_at, updated_at, data)
            values ($1, $2, $3, $4, $5, $6, $7)
            on conflict (id) do update set
@@ -167,7 +171,7 @@ async function createPostgresMetadataStore(config, logger) {
       }
 
       if (collection === "devices") {
-        await query(
+        await executor(
           `insert into devices (id, user_id, session_id, role, trust_token_hash, trusted_until, revoked_at, created_at, updated_at, data)
            values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
            on conflict (id) do update set
@@ -196,7 +200,7 @@ async function createPostgresMetadataStore(config, logger) {
       }
 
       if (collection === "sessions") {
-        await query(
+        await executor(
           `insert into anonymous_sessions (id, code, user_id, expires_at, created_at, updated_at, data)
            values ($1, $2, $3, $4, $5, $6, $7)
            on conflict (id) do update set
@@ -211,7 +215,7 @@ async function createPostgresMetadataStore(config, logger) {
       }
 
       if (collection === "pairings") {
-        await query(
+        await executor(
           `insert into pairings (id, session_id, pc_device_id, mobile_device_id, code_hash, status, created_at, updated_at, data)
            values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
            on conflict (id) do update set
@@ -238,7 +242,7 @@ async function createPostgresMetadataStore(config, logger) {
       }
 
       if (collection === "transfers") {
-        await query(
+        await executor(
           `insert into transfers (id, session_id, from_role, to_role, file_name, mime_type, size_bytes, status, storage_key, storage_driver, expires_at, created_at, updated_at, data)
            values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
            on conflict (id) do update set
@@ -275,12 +279,12 @@ async function createPostgresMetadataStore(config, logger) {
       }
 
       if (collection === "uploadSessions" || collection === "uploadParts") {
-        await upsertUploadSession(record, createdAt, nowDate);
+        await upsertUploadSession(record, createdAt, nowDate, executor);
         return { ...record, id };
       }
 
       if (collection === "localePreferences") {
-        await query(
+        await executor(
           `insert into locale_preferences (id, user_id, device_id, locale, created_at, updated_at, data)
            values ($1, $2, $3, $4, $5, $6, $7)
            on conflict (id) do update set
@@ -303,9 +307,9 @@ async function createPostgresMetadataStore(config, logger) {
     return { ...record, id };
   }
 
-  async function upsertUploadSession(record, createdAt, nowDate) {
+  async function upsertUploadSession(record, createdAt, nowDate, executor = query) {
     const id = record.id || record.uploadId || crypto.randomUUID();
-    await query(
+    await executor(
       `insert into upload_sessions (id, transfer_id, session_id, status, provider_upload_id, storage_key, part_size_bytes, total_parts, created_at, updated_at, data)
        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        on conflict (id) do update set
@@ -334,13 +338,13 @@ async function createPostgresMetadataStore(config, logger) {
     );
 
     for (const part of record.parts || record.uploadedParts || []) {
-      await upsertUploadPart(id, part, nowDate);
+      await upsertUploadPart(id, part, nowDate, executor);
     }
   }
 
-  async function upsertUploadPart(uploadSessionId, part, nowDate) {
+  async function upsertUploadPart(uploadSessionId, part, nowDate, executor = query) {
     const id = part.id || `${uploadSessionId}:${part.partNumber}`;
-    await query(
+    await executor(
       `insert into upload_parts (id, upload_session_id, part_number, etag, checksum_sha256, size_bytes, status, created_at, updated_at, data)
        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        on conflict (upload_session_id, part_number) do update set
@@ -363,6 +367,35 @@ async function createPostgresMetadataStore(config, logger) {
         part
       ]
     );
+  }
+
+  async function upsertUploadInitiation({ transfer, upload }) {
+    const client = await pool.connect();
+    const txQuery = client.query.bind(client);
+
+    try {
+      await txQuery("begin");
+      const savedTransfer = await upsert("transfers", transfer, txQuery);
+      const savedUpload = await upsert("uploadSessions", upload, txQuery);
+      await txQuery("commit");
+      return { transfer: savedTransfer, upload: savedUpload };
+    } catch (error) {
+      await txQuery("rollback").catch((rollbackError) => {
+        logger?.error?.("postgres upload initiation rollback failed", {
+          transferId: transfer?.id,
+          uploadId: upload?.id,
+          error: rollbackError
+        });
+      });
+      logger?.error?.("postgres upload initiation transaction failed", {
+        transferId: transfer?.id,
+        uploadId: upload?.id,
+        error
+      });
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async function get(collection, id) {
@@ -447,6 +480,7 @@ async function createPostgresMetadataStore(config, logger) {
     remove,
     list,
     addAudit,
+    upsertUploadInitiation,
     health,
     close: () => pool.end()
   };
