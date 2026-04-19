@@ -99,6 +99,8 @@ MALWARE_SCAN_WEBHOOK_URL
 
 Use `.env.staging.example` for staging and `.env.example` for production.
 
+Cloudflare R2 values must use the S3 API account endpoint: `S3_ENDPOINT=https://YOUR_ACCOUNT_ID.r2.cloudflarestorage.com`, `S3_REGION=auto`, and `S3_FORCE_PATH_STYLE=false`. Signed upload URLs do not work with R2 custom domains.
+
 ## API Environment
 
 Staging:

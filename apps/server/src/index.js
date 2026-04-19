@@ -569,6 +569,25 @@ function runtimeDriverSummary() {
   };
 }
 
+function storageDiagnostics() {
+  return {
+    kind: storage.kind,
+    provider: config.s3?.provider || "generic-s3",
+    endpointHost: safeUrlHost(config.s3?.endpoint || ""),
+    region: config.s3?.region || "",
+    bucket: config.s3?.bucket || "",
+    forcePathStyle: Boolean(config.s3?.forcePathStyle)
+  };
+}
+
+function safeUrlHost(value) {
+  try {
+    return new URL(value).host;
+  } catch {
+    return "";
+  }
+}
+
 function fallbackWarnings() {
   return Object.entries(runtimeDriverSummary())
     .filter(([, value]) => value.fallbackActive)
@@ -1381,12 +1400,24 @@ app.post("/api/uploads/initiate", async (req, res) => {
   const storageKey = createStorageKey({ transferId, fileName });
   const totalParts = Math.ceil(size / config.chunkSizeBytes);
 
-  const provider = await storage.createMultipartUpload({
-    uploadId,
-    storageKey,
-    fileName,
-    mimeType
-  });
+  let provider;
+  try {
+    provider = await storage.createMultipartUpload({
+      uploadId,
+      storageKey,
+      fileName,
+      mimeType
+    });
+  } catch (error) {
+    logger.error("storage multipart upload initiate failed", {
+      requestId: req.id,
+      error,
+      storage: storageDiagnostics()
+    });
+    return sendError(res, 502, "Object storage upload could not be started.", {
+      code: "STORAGE_MULTIPART_INITIATE_FAILED"
+    });
+  }
 
   const transfer = {
     id: transferId,

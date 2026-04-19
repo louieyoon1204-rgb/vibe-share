@@ -1,0 +1,3 @@
+# Cloudflare Pages SPA fallback.
+# Direct visits such as /j/123456 must boot the same app shell.
+/* /index.html 200

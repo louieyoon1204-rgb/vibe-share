@@ -166,7 +166,7 @@ powershell -ExecutionPolicy Bypass -File scripts\run-full-check.ps1
 - `PUBLIC_API_URL`: public API URL
 - `DATABASE_URL`: PostgreSQL URL
 - `REDIS_URL`: Redis URL
-- `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`: S3-compatible storage
+- `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`: S3-compatible storage. Cloudflare R2 uses `S3_ENDPOINT=https://YOUR_ACCOUNT_ID.r2.cloudflarestorage.com`, `S3_REGION=auto`, `S3_FORCE_PATH_STYLE=false`.
 - `DEVICE_TRUST_SECRET`, `ADMIN_TOKEN`, `AUTH_JWT_SECRET`: staging/production secrets
 
 ## 폴더 구조

@@ -32,8 +32,8 @@ PUBLIC_WEB_APP_URL=https://app-staging.vibeshare.app
 PUBLIC_API_URL=https://api-staging.vibeshare.app
 DATABASE_URL=<railway-or-hosted-postgres-url>
 REDIS_URL=<railway-or-hosted-redis-url>
-S3_ENDPOINT=<s3-compatible-endpoint>
-S3_REGION=<region>
+S3_ENDPOINT=https://YOUR_ACCOUNT_ID.r2.cloudflarestorage.com
+S3_REGION=auto
 S3_BUCKET=<bucket>
 S3_ACCESS_KEY_ID=<secret>
 S3_SECRET_ACCESS_KEY=<secret>
@@ -47,6 +47,8 @@ MALWARE_SCAN_WEBHOOK_URL=<scanner-url-or-empty>
 ```
 
 Use `.env.staging.example` as the source checklist, but do not upload `.env` to GitHub or Railway.
+
+For Cloudflare R2, `S3_ENDPOINT` must be the account S3 API endpoint. Do not use a bucket URL, `r2.dev` URL, or custom domain for signed uploads.
 
 ## After Deploy
 

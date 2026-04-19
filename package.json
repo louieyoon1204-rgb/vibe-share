@@ -19,10 +19,12 @@
     "lint": "npm run lint --workspaces --if-present",
     "smoke": "npm run smoke --workspaces --if-present",
     "smoke:mobile-url": "node scripts/mobile-facing-url-smoke.mjs",
+    "smoke:r2-config": "node scripts/r2-config-smoke.mjs",
+    "smoke:r2-upload": "node scripts/r2-upload-smoke.mjs",
     "smoke:integration": "node scripts/integration-smoke.mjs",
     "smoke:prod-foundation": "node scripts/production-foundation-smoke.mjs",
     "smoke:minio": "node scripts/minio-smoke.mjs",
-    "test": "npm run smoke && npm run smoke:mobile-url && npm run smoke:integration && npm run smoke:prod-foundation",
+    "test": "npm run smoke && npm run smoke:mobile-url && npm run smoke:r2-config && npm run smoke:integration && npm run smoke:prod-foundation",
     "staging:readiness": "powershell -ExecutionPolicy Bypass -File scripts/staging-readiness.ps1",
     "build:web:public": "powershell -ExecutionPolicy Bypass -File scripts/build-public-web.ps1",
     "github:readiness": "powershell -ExecutionPolicy Bypass -File scripts/github-readiness.ps1"

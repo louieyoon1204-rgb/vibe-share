@@ -35,6 +35,11 @@ const PUBLIC_CONNECTION_NOTICE = "휴대폰 카메라로 QR을 스캔하면 같�
 const LOCAL_NETWORK_FAILURE_FIRST_NOTICE = "같은 WiFi인지 먼저 확인하세요.";
 const PUBLIC_CONNECTION_FAILURE_NOTICE = "연결이 실패하면 새 QR을 다시 스캔하세요.";
 const PUBLIC_WEB_HOSTS = new Set(["app.getvibeshare.com", "app-staging.getvibeshare.com"]);
+let runtimeErrorHandled = false;
+let getRuntimeStateForError = () => null;
+
+installRuntimeErrorHandlers();
+
 const AUTO_JOIN_DELAYS_MS = [0, 1000, 2500];
 const JOIN_PHASES = {
   ROUTE_OPENED: "route_opened",
@@ -151,25 +156,37 @@ const state = {
   dismissedReceiveTransferIds: new Set(),
   uploadManifests: []
 };
+getRuntimeStateForError = () => state;
 
 const app = document.querySelector("#app");
 let els = {};
 
-void disableServiceWorkerCaching();
+startApp();
 
-if (state.role === "mobile") {
-  renderMobileShell();
-  bindMobileEvents();
-  render();
-  void bootMobile();
-} else {
-  renderPcShell();
-  bindPcEvents();
-  render();
-  void bootPc();
-  void refreshUploadManifests();
+function startApp() {
+  try {
+    if (!app) {
+      throw new Error("APP_ROOT_NOT_FOUND");
+    }
+    runAsyncTask(disableServiceWorkerCaching(), "service-worker-cleanup");
+
+    if (state.role === "mobile") {
+      renderMobileShell();
+      bindMobileEvents();
+      render();
+      runAsyncTask(bootMobile(), "boot-mobile");
+    } else {
+      renderPcShell();
+      bindPcEvents();
+      render();
+      runAsyncTask(bootPc(), "boot-pc");
+      runAsyncTask(refreshUploadManifests(), "refresh-upload-manifests");
+    }
+    bindPageLifecycleEvents();
+  } catch (error) {
+    handleRuntimeError(error, { phase: "start-app" });
+  }
 }
-bindPageLifecycleEvents();
 
 function initialPcApiBaseUrl() {
   if (isPublicWebRuntime()) {
@@ -183,6 +200,174 @@ function initialPcPublicServerUrl() {
     return defaultApiBaseUrl();
   }
   return normalizeBaseUrl(query.get("serverUrl") || savedWebSession?.publicServerUrl || defaultApiBaseUrl());
+}
+
+function installRuntimeErrorHandlers() {
+  if (window.__vibeShareRuntimeErrorHandlersInstalled) {
+    return;
+  }
+  window.__vibeShareRuntimeErrorHandlersInstalled = true;
+  window.addEventListener("error", (event) => {
+    handleRuntimeError(event.error || event.message, {
+      phase: "window-error",
+      filename: event.filename || "",
+      line: event.lineno || 0,
+      column: event.colno || 0
+    });
+  });
+  window.addEventListener("unhandledrejection", (event) => {
+    handleRuntimeError(event.reason || "unhandledrejection", { phase: "unhandledrejection" });
+  });
+}
+
+function runAsyncTask(task, phase) {
+  Promise.resolve(task).catch((error) => {
+    handleRuntimeError(error, { phase });
+  });
+}
+
+function handleRuntimeError(error, context = {}) {
+  const details = runtimeErrorSnapshot(error, context);
+  safeConsoleError("[vibe-share] runtime error", details);
+  renderRuntimeErrorCard(details);
+}
+
+function runtimeErrorSnapshot(error, context = {}) {
+  const runtimeState = safeRuntimeState();
+  return {
+    message: safeErrorMessage(error),
+    stack: safeErrorStack(error),
+    phase: context.phase || "runtime",
+    filename: context.filename || "",
+    line: context.line || 0,
+    column: context.column || 0,
+    buildId: BUILD_ID,
+    appVersion: APP_VERSION,
+    buildTime: BUILD_TIME,
+    routeCode: safeRouteJoinCode(),
+    routeType: runtimeState?.routeType || (safeRouteJoinCode() ? "qr-route" : "unknown"),
+    apiBaseUrl: runtimeState?.apiBaseUrl || safePublicApiBaseUrl(),
+    joinPhase: runtimeState?.joinPhase || "",
+    paired: Boolean(runtimeState?.socketConnected && runtimeState?.paired),
+    href: window.location.href,
+    userAgent: navigator.userAgent
+  };
+}
+
+function renderRuntimeErrorCard(details) {
+  const root = document.querySelector("#app");
+  if (!root) {
+    return;
+  }
+  runtimeErrorHandled = true;
+  const routeCode = details.routeCode || "------";
+  root.innerHTML = `
+    <main class="runtime-error-layout">
+      <section class="runtime-error-card" role="alert" aria-live="assertive">
+        <p class="eyebrow">Vibe Share</p>
+        <h1>연결 화면을 다시 준비해야 합니다</h1>
+        <p class="lead">앱을 여는 중 오류가 발생했습니다. 흰 화면 대신 이 안내가 보이면 새로고침으로 다시 시도할 수 있습니다.</p>
+        <div class="runtime-error-actions">
+          <button id="runtimeRetryButton" type="button">다시 열기</button>
+          <a class="secondary-link" href="/">PC 화면으로 이동</a>
+        </div>
+        <dl class="runtime-error-meta">
+          <div><dt>QR 코드</dt><dd>${escapeRuntimeHtml(routeCode)}</dd></div>
+          <div><dt>API</dt><dd>${escapeRuntimeHtml(details.apiBaseUrl || "-")}</dd></div>
+          <div><dt>빌드</dt><dd>${escapeRuntimeHtml(details.buildId || "-")}</dd></div>
+          <div><dt>단계</dt><dd>${escapeRuntimeHtml(details.phase || "-")} / ${escapeRuntimeHtml(details.joinPhase || "-")}</dd></div>
+        </dl>
+        <details class="runtime-error-debug">
+          <summary>개발자 오류 정보</summary>
+          <pre>${escapeRuntimeHtml(JSON.stringify(details, null, 2))}</pre>
+        </details>
+      </section>
+    </main>
+  `;
+  const retryButton = document.querySelector("#runtimeRetryButton");
+  retryButton?.addEventListener("click", () => {
+    try {
+      clearAllVibeShareStorage("runtime-error-retry");
+    } catch {
+      // Ignore storage cleanup failures and reload anyway.
+    }
+    const retryUrl = new URL(window.location.href);
+    retryUrl.searchParams.set("fresh", "1");
+    retryUrl.searchParams.set("t", String(Date.now()));
+    window.location.replace(retryUrl.toString());
+  });
+}
+
+function safeRuntimeState() {
+  try {
+    return getRuntimeStateForError();
+  } catch {
+    return null;
+  }
+}
+
+function safeRouteJoinCode() {
+  try {
+    const pathCode = (window.location.pathname.match(/^\/(?:j|join)\/(\d{6})\/?$/) || [])[1] || "";
+    const params = new URLSearchParams(window.location.search);
+    const searchCode = String(params.get("join") || params.get("code") || "").replace(/\D/g, "").slice(0, 6);
+    return pathCode || searchCode || "";
+  } catch {
+    return "";
+  }
+}
+
+function safePublicApiBaseUrl() {
+  try {
+    const hostname = window.location.hostname || "";
+    if (window.location.protocol === "https:" && hostname.startsWith("app.")) {
+      return `${window.location.protocol}//api.${hostname.slice("app.".length)}`;
+    }
+    if (window.location.protocol === "https:" && hostname.startsWith("app-staging.")) {
+      return `${window.location.protocol}//api-staging.${hostname.slice("app-staging.".length)}`;
+    }
+  } catch {
+    // Ignore URL resolution failures in the error path.
+  }
+  return "";
+}
+
+function safeErrorMessage(error) {
+  if (error instanceof Error) {
+    return error.message || error.name || "Unknown error";
+  }
+  if (typeof error === "string") {
+    return error;
+  }
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+}
+
+function safeErrorStack(error) {
+  if (!(error instanceof Error) || !error.stack) {
+    return "";
+  }
+  return String(error.stack).slice(0, 3000);
+}
+
+function safeConsoleError(message, details) {
+  try {
+    console.error(message, details);
+  } catch {
+    // Avoid throwing from the fallback logger.
+  }
+}
+
+function escapeRuntimeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 function renderPcShell() {
@@ -1673,9 +1858,13 @@ async function uploadFileResumable(file) {
         if (!partResponse.ok) {
           throw new Error(`part ${partNumber}: HTTP ${partResponse.status}`);
         }
+        const etag = partResponse.headers.get("etag")?.replaceAll('"', "") || "";
+        if (!etag) {
+          throw new Error("R2_UPLOAD_ETAG_NOT_EXPOSED");
+        }
         part = {
           partNumber,
-          etag: partResponse.headers.get("etag")?.replaceAll('"', "") || checksum,
+          etag,
           checksum,
           size: chunk.size
         };
@@ -2044,10 +2233,17 @@ function renderReceiveModal() {
 }
 
 function render() {
-  if (state.role === "mobile") {
-    renderMobile();
-  } else {
-    renderPc();
+  if (runtimeErrorHandled) {
+    return;
+  }
+  try {
+    if (state.role === "mobile") {
+      renderMobile();
+    } else {
+      renderPc();
+    }
+  } catch (error) {
+    handleRuntimeError(error, { phase: "render" });
   }
 }
 
@@ -2945,11 +3141,19 @@ function saveWebSession() {
 function saveCurrentSession(reason = "") {
   const storageKey = state.role === "mobile" ? MOBILE_SESSION_STORAGE_KEY : WEB_SESSION_STORAGE_KEY;
   if (currentRouteJoinCode() && !sessionMatchesCurrentRoute(state.session)) {
-    sessionStorage.removeItem(storageKey);
+    try {
+      sessionStorage.removeItem(storageKey);
+    } catch {
+      // Ignore storage failures; QR routes must keep running.
+    }
     return;
   }
   if (!state.session?.id) {
-    sessionStorage.removeItem(storageKey);
+    try {
+      sessionStorage.removeItem(storageKey);
+    } catch {
+      // Ignore storage failures; this is only recovery state.
+    }
     saveRecentSession(reason);
     return;
   }
@@ -2973,7 +3177,16 @@ function saveCurrentSession(reason = "") {
     savedAt: Date.now(),
     reason
   };
-  sessionStorage.setItem(storageKey, JSON.stringify(payload));
+  try {
+    sessionStorage.setItem(storageKey, JSON.stringify(payload));
+  } catch (error) {
+    safeConsoleError("[vibe-share] session storage save skipped", {
+      reason,
+      message: safeErrorMessage(error),
+      storageKey,
+      buildId: BUILD_ID
+    });
+  }
   saveRecentSession(reason, payload);
 }
 
@@ -2982,11 +3195,19 @@ function saveRecentSession(reason = "", currentPayload = null) {
   const code = currentPayload?.joinCode || state.joinCode || session?.code || "";
   const expiresAt = Number(session?.expiresAt || 0);
   if (!code && !session?.id) {
-    localStorage.removeItem(RECENT_SESSION_STORAGE_KEY);
+    try {
+      localStorage.removeItem(RECENT_SESSION_STORAGE_KEY);
+    } catch {
+      // Ignore storage cleanup failures.
+    }
     return;
   }
   if (expiresAt && expiresAt <= Date.now()) {
-    localStorage.removeItem(RECENT_SESSION_STORAGE_KEY);
+    try {
+      localStorage.removeItem(RECENT_SESSION_STORAGE_KEY);
+    } catch {
+      // Ignore storage cleanup failures.
+    }
     return;
   }
 
@@ -3025,10 +3246,22 @@ function saveRecentSession(reason = "", currentPayload = null) {
   }
 
   if (containsBlockedUrlFields(recent)) {
-    localStorage.removeItem(RECENT_SESSION_STORAGE_KEY);
+    try {
+      localStorage.removeItem(RECENT_SESSION_STORAGE_KEY);
+    } catch {
+      // Ignore storage cleanup failures.
+    }
     return;
   }
-  localStorage.setItem(RECENT_SESSION_STORAGE_KEY, JSON.stringify(recent));
+  try {
+    localStorage.setItem(RECENT_SESSION_STORAGE_KEY, JSON.stringify(recent));
+  } catch (error) {
+    safeConsoleError("[vibe-share] recent session save skipped", {
+      reason,
+      message: safeErrorMessage(error),
+      buildId: BUILD_ID
+    });
+  }
 }
 
 function loadSavedWebSession() {

@@ -48,14 +48,18 @@ Use `.env.staging.example` as the checklist.
 DATABASE_URL
 REDIS_URL
 S3_ENDPOINT
+S3_REGION=auto
 S3_BUCKET
 S3_ACCESS_KEY_ID
 S3_SECRET_ACCESS_KEY
+S3_FORCE_PATH_STYLE=false
 DEVICE_TRUST_SECRET
 ADMIN_TOKEN
 AUTH_JWT_SECRET
 MALWARE_SCAN_WEBHOOK_URL
 ```
+
+For Cloudflare R2, `S3_ENDPOINT` is the account S3 API endpoint: `https://YOUR_ACCOUNT_ID.r2.cloudflarestorage.com`.
 
 ## Deploy Order
 

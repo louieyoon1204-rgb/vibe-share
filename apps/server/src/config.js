@@ -13,6 +13,14 @@ export function loadConfig(repoRoot) {
   const databaseDriver = process.env.DATABASE_DRIVER || (process.env.DATABASE_URL ? "postgres" : "json");
   const cacheDriver = process.env.CACHE_DRIVER || (process.env.REDIS_URL ? "redis" : "memory");
   const realtimeAdapter = process.env.SOCKET_IO_ADAPTER || (process.env.REDIS_URL ? "redis" : "memory");
+  const s3Config = normalizeS3Config({
+    endpoint: process.env.S3_ENDPOINT || "",
+    region: process.env.S3_REGION || "",
+    bucket: process.env.S3_BUCKET || "",
+    accessKeyId: process.env.S3_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || "",
+    forcePathStyle: process.env.S3_FORCE_PATH_STYLE
+  });
 
   const config = {
     appMode,
@@ -56,12 +64,14 @@ export function loadConfig(repoRoot) {
       deviceTrustSecret: process.env.DEVICE_TRUST_SECRET || process.env.AUTH_JWT_SECRET || "dev-device-trust-secret"
     },
     s3: {
-      endpoint: process.env.S3_ENDPOINT || "",
-      region: process.env.S3_REGION || "us-east-1",
-      bucket: process.env.S3_BUCKET || "",
-      accessKeyId: process.env.S3_ACCESS_KEY_ID || "",
-      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || "",
-      forcePathStyle: process.env.S3_FORCE_PATH_STYLE !== "false"
+      endpoint: s3Config.endpoint,
+      region: s3Config.region,
+      bucket: s3Config.bucket,
+      accessKeyId: s3Config.accessKeyId,
+      secretAccessKey: s3Config.secretAccessKey,
+      forcePathStyle: s3Config.forcePathStyle,
+      provider: s3Config.provider,
+      warnings: s3Config.warnings
     }
   };
 
@@ -78,9 +88,112 @@ function parseList(value) {
     .filter(Boolean);
 }
 
+function normalizeS3Config({
+  endpoint,
+  region,
+  bucket,
+  accessKeyId,
+  secretAccessKey,
+  forcePathStyle
+}) {
+  const endpointInfo = normalizeS3Endpoint(endpoint, bucket);
+  const isR2 = endpointInfo.provider === "cloudflare-r2";
+  const warnings = [...endpointInfo.warnings];
+  let normalizedRegion = String(region || "").trim() || (isR2 ? "auto" : "us-east-1");
+
+  if (isR2 && normalizedRegion !== "auto") {
+    warnings.push("Cloudflare R2 requires S3_REGION=auto. The configured value was normalized to auto.");
+    normalizedRegion = "auto";
+  }
+
+  const forcePathStyleWasSet = forcePathStyle !== undefined && forcePathStyle !== "";
+  let normalizedForcePathStyle = forcePathStyleWasSet
+    ? parseBoolean(forcePathStyle, !isR2)
+    : !isR2;
+
+  if (isR2 && normalizedForcePathStyle) {
+    warnings.push("Cloudflare R2 presigned uploads use the S3 API account endpoint with virtual-hosted bucket URLs. S3_FORCE_PATH_STYLE was normalized to false.");
+    normalizedForcePathStyle = false;
+  }
+
+  return {
+    endpoint: endpointInfo.endpoint,
+    region: normalizedRegion,
+    bucket: String(bucket || "").trim(),
+    accessKeyId: String(accessKeyId || "").trim(),
+    secretAccessKey: String(secretAccessKey || ""),
+    forcePathStyle: normalizedForcePathStyle,
+    provider: endpointInfo.provider,
+    warnings
+  };
+}
+
+function normalizeS3Endpoint(value, bucket) {
+  const raw = String(value || "").trim();
+  const warnings = [];
+  if (!raw) {
+    return { endpoint: "", provider: "generic-s3", warnings };
+  }
+
+  try {
+    const url = new URL(/^[a-z][a-z\d+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`);
+    url.username = "";
+    url.password = "";
+    const host = url.hostname.toLowerCase();
+    const r2Suffix = ".r2.cloudflarestorage.com";
+    const isR2 = host.endsWith(r2Suffix);
+
+    if (url.pathname && url.pathname !== "/") {
+      warnings.push("S3_ENDPOINT must not include a bucket or object path. The path was ignored.");
+      url.pathname = "/";
+    }
+    url.search = "";
+    url.hash = "";
+
+    if (isR2) {
+      url.protocol = "https:";
+      if (url.port) {
+        warnings.push("Cloudflare R2 S3_ENDPOINT must not include a custom port. The port was ignored.");
+        url.port = "";
+      }
+
+      const bucketName = String(bucket || "").trim().toLowerCase();
+      const prefix = host.slice(0, -r2Suffix.length);
+      const labels = prefix.split(".").filter(Boolean);
+      if (labels.length > 1 && labels[0] === bucketName) {
+        url.hostname = `${labels.slice(1).join(".")}${r2Suffix}`;
+        warnings.push("S3_ENDPOINT looked like a bucket URL. It was normalized to the Cloudflare R2 account endpoint.");
+      }
+    }
+
+    return {
+      endpoint: url.toString().replace(/\/$/, ""),
+      provider: isR2 ? "cloudflare-r2" : "generic-s3",
+      warnings
+    };
+  } catch {
+    warnings.push("S3_ENDPOINT could not be parsed. The raw value was left unchanged.");
+    return { endpoint: raw, provider: "generic-s3", warnings };
+  }
+}
+
+function parseBoolean(value, defaultValue) {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (!normalized) {
+    return defaultValue;
+  }
+  if (["1", "true", "yes", "y", "on"].includes(normalized)) {
+    return true;
+  }
+  if (["0", "false", "no", "n", "off"].includes(normalized)) {
+    return false;
+  }
+  return defaultValue;
+}
+
 function validateRuntimeConfig(config) {
   const errors = [];
-  const warnings = [];
+  const warnings = [...(config.s3?.warnings || [])];
 
   if (config.appMode === "production") {
     if (config.databaseDriver !== "postgres") {

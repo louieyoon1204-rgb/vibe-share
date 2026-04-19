@@ -12,6 +12,8 @@ export async function createS3StorageAdapter({ config }) {
     region: config.s3.region,
     endpoint: config.s3.endpoint || undefined,
     forcePathStyle: config.s3.forcePathStyle,
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
     credentials: config.s3.accessKeyId && config.s3.secretAccessKey
       ? {
           accessKeyId: config.s3.accessKeyId,
@@ -82,7 +84,7 @@ export async function createS3StorageAdapter({ config }) {
         MultipartUpload: {
           Parts: parts
             .sort((a, b) => a.partNumber - b.partNumber)
-            .map((part) => ({ PartNumber: part.partNumber, ETag: part.etag }))
+            .map((part) => ({ PartNumber: part.partNumber, ETag: quoteEtag(part.etag) }))
         }
       }));
 
@@ -128,8 +130,19 @@ export async function createS3StorageAdapter({ config }) {
         driver: "s3",
         available: true,
         bucket: config.s3.bucket,
-        endpoint: config.s3.endpoint || "aws-default"
+        endpoint: config.s3.endpoint || "aws-default",
+        region: config.s3.region,
+        provider: config.s3.provider || "generic-s3",
+        forcePathStyle: config.s3.forcePathStyle
       };
     }
   };
+}
+
+function quoteEtag(value) {
+  const etag = String(value || "").trim();
+  if (!etag) {
+    return etag;
+  }
+  return etag.startsWith('"') && etag.endsWith('"') ? etag : `"${etag.replaceAll('"', "")}"`;
 }
