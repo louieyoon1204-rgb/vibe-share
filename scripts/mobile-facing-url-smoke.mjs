@@ -7,6 +7,7 @@ import {
   apiUrlFromWebUrl,
   containsLoopbackUrlValue,
   isMobileFacingUrlBlocked,
+  isPrivateLanHost,
   resolveMobileServerBaseUrl,
   resolveMobileWebBaseUrl,
   sanitizeMobileFacingUrl
@@ -54,6 +55,10 @@ assert.equal(isMobileFacingUrlBlocked(rewrittenDownloadUrl), false);
 
 assert.equal(isMobileFacingUrlBlocked("http://localhost:4000/api/info"), true);
 assert.equal(isMobileFacingUrlBlocked("http://127.0.0.1:9000/vibe-share-transfers/file"), true);
+assert.equal(isMobileFacingUrlBlocked("http://10.197.219.150:4000/api/info"), false);
+assert.equal(isMobileFacingUrlBlocked("http://10.197.219.150:4000/api/info", { blockPrivate: true }), true);
+assert.equal(isMobileFacingUrlBlocked("http://192.168.219.43:4000/api/info", { blockPrivate: true }), true);
+assert.equal(isPrivateLanHost("10.197.219.150"), true);
 assert.equal(containsLoopbackUrlValue(JSON.stringify({ apiBaseUrl: "http://localhost:4000" })), true);
 assert.equal(containsLoopbackUrlValue(JSON.stringify({ downloadBaseUrl: lanApi })), false);
 
@@ -72,6 +77,12 @@ assert.match(webMain, /window\.addEventListener\("pagehide"/);
 assert.match(webMain, /window\.addEventListener\("pageshow"/);
 assert.match(webMain, /recoverCurrentSession/);
 assert.match(webMain, /AUTO_JOIN_DELAYS_MS\s*=\s*\[0,\s*1000,\s*2500\]/);
+assert.match(webMain, /PUBLIC_CONNECTION_NOTICE/);
+assert.match(webMain, /LOCAL_NETWORK_REQUIREMENT_NOTICE/);
+assert.match(webMain, /connectionFailureFirstNotice/);
+assert.match(webMain, /isPublicWebRuntime/);
+assert.match(webMain, /publicApiBaseUrlFromLocation/);
+assert.match(webMain, /isProductionBlockedUrl/);
 assert.match(webMain, /휴대폰과 PC는 같은 WiFi 또는 같은 핫스팟에 연결되어 있어야 합니다\./);
 assert.match(webMain, /같은 WiFi인지 먼저 확인하세요\./);
 assert.match(webMain, /function scheduleAutoJoin/);
@@ -86,6 +97,7 @@ assert.match(webMain, /function prepareQrRouteAutoJoin/);
 assert.match(webMain, /hardResetQrRouteStorage\("initial-qr-route"\)/);
 assert.match(webMain, /const recentSession = routeJoinCode \? null : loadRecentSession\(\)/);
 assert.match(webMain, /url\.searchParams\.set\("v", BUILD_ID\)/);
+assert.match(webMain, /new URL\(window\.location\.origin\)/);
 assert.match(webMain, /function currentRouteJoinCode/);
 assert.match(webMain, /JOIN_PHASES/);
 assert.match(webMain, /requirePaired:\s*true/);
@@ -117,6 +129,9 @@ assert.doesNotMatch(webMain, /beforeunload/);
 
 const serverIndex = await fsp.readFile(path.join(repoRoot, "apps/server/src/index.js"), "utf8");
 assert.match(serverIndex, /mobileServerBaseUrl/);
+assert.match(serverIndex, /isPublicDeployment/);
+assert.match(serverIndex, /publicDeployment \? null/);
+assert.match(serverIndex, /app\.set\("trust proxy", true\)/);
 assert.match(serverIndex, /joinSource/);
 assert.match(serverIndex, /api session join succeeded/);
 assert.match(serverIndex, /socket session joined/);

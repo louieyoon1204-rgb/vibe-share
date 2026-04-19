@@ -14,7 +14,9 @@ import multer from "multer";
 import { Server } from "socket.io";
 import {
   TRANSFER_STATES,
+  isLoopbackHost,
   isMobileFacingUrlBlocked,
+  isPrivateLanHost,
   resolveMobileServerBaseUrl,
   resolveMobileWebBaseUrl
 } from "@vibe-share/shared";
@@ -70,6 +72,7 @@ const cache = await createCache(config, logger);
 const storage = await createStorageAdapter(config);
 
 const app = express();
+app.set("trust proxy", true);
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -134,6 +137,10 @@ function now() {
 }
 
 function localNetworkUrls(port = config.port) {
+  if (isPublicDeployment()) {
+    return [];
+  }
+
   const candidates = [];
   const interfaces = os.networkInterfaces();
 
@@ -465,6 +472,10 @@ function requestBaseUrl(req) {
   return `${req.protocol}://${req.get("host")}`;
 }
 
+function publicUrlOrRequest(publicUrl, req) {
+  return publicUrl || requestBaseUrl(req);
+}
+
 function setDownloadHeaders(res, transfer) {
   res.setHeader("Content-Type", transfer.mimeType || "application/octet-stream");
   res.setHeader("Content-Length", String(transfer.size));
@@ -487,6 +498,10 @@ function pipeDownloadStream(stream, res) {
 }
 
 function mobileServerBaseUrl(req) {
+  if (isPublicDeployment(req)) {
+    return publicUrlOrRequest(config.publicApiUrl, req);
+  }
+
   return resolveMobileServerBaseUrl({
     requestBaseUrl: requestBaseUrl(req),
     publicUrl: config.publicApiUrl,
@@ -496,12 +511,33 @@ function mobileServerBaseUrl(req) {
 }
 
 function mobileWebBaseUrl(req) {
+  if (isPublicDeployment(req)) {
+    return config.publicWebAppUrl || "";
+  }
+
   return resolveMobileWebBaseUrl({
     requestBaseUrl: requestBaseUrl(req),
     publicUrl: config.publicWebAppUrl,
     candidateUrls: localNetworkUrls(WEB_DEV_PORT),
     webPort: WEB_DEV_PORT
   });
+}
+
+function isPublicDeployment(req = null) {
+  if (config.appMode === "production") {
+    return true;
+  }
+  return req ? isPublicRequestHost(req) : false;
+}
+
+function isPublicRequestHost(req) {
+  const hostname = String(req?.hostname || req?.get?.("host") || "")
+    .split(":")[0]
+    .toLowerCase();
+  if (!hostname || isLoopbackHost(hostname) || isPrivateLanHost(hostname)) {
+    return false;
+  }
+  return hostname === "api.getvibeshare.com" || hostname.endsWith(".getvibeshare.com");
 }
 
 function runtimeDriverSummary() {
@@ -876,8 +912,9 @@ app.get("/health", (_req, res) => {
 });
 
 app.get("/api/info", (req, res) => {
-  const lanServerUrls = localNetworkUrls(config.port);
-  const lanWebUrls = localNetworkUrls(WEB_DEV_PORT);
+  const publicDeployment = isPublicDeployment(req);
+  const lanServerUrls = publicDeployment ? [] : localNetworkUrls(config.port);
+  const lanWebUrls = publicDeployment ? [] : localNetworkUrls(WEB_DEV_PORT);
   const mobileServerUrl = mobileServerBaseUrl(req);
   const mobileWebUrl = mobileWebBaseUrl(req);
 
@@ -912,14 +949,14 @@ app.get("/api/info", (req, res) => {
     sessionTtlMs: config.sessionTtlMs,
     transferTtlMs: config.transferTtlMs,
     validation: config.validation,
-    requestBaseUrl: requestBaseUrl(req),
-    localServerUrl: `http://localhost:${config.port}`,
-    localWebUrl: `http://localhost:${WEB_DEV_PORT}`,
+    requestBaseUrl: publicDeployment ? (config.publicApiUrl || requestBaseUrl(req)) : requestBaseUrl(req),
+    localServerUrl: publicDeployment ? null : `http://localhost:${config.port}`,
+    localWebUrl: publicDeployment ? null : `http://localhost:${WEB_DEV_PORT}`,
     mobileServerUrl,
     mobileWebUrl,
     downloadBaseUrl: mobileServerUrl,
-    primaryLanServerUrl: lanServerUrls[0] || "",
-    primaryLanWebUrl: lanWebUrls[0] || "",
+    primaryLanServerUrl: publicDeployment ? null : (lanServerUrls[0] || ""),
+    primaryLanWebUrl: publicDeployment ? null : (lanWebUrls[0] || ""),
     lanBaseUrls: lanServerUrls,
     lanWebUrls
   });

@@ -26,14 +26,28 @@ export function isLoopbackHost(hostname) {
   );
 }
 
-export function isMobileFacingUrlBlocked(value) {
+export function isPrivateLanHost(hostname) {
+  const normalized = String(hostname || "")
+    .trim()
+    .toLowerCase()
+    .replace(/^\[(.*)\]$/, "$1");
+
+  return (
+    /^10(?:\.|$)/.test(normalized) ||
+    /^192\.168(?:\.|$)/.test(normalized) ||
+    /^172\.(1[6-9]|2\d|3[0-1])(?:\.|$)/.test(normalized) ||
+    /^169\.254(?:\.|$)/.test(normalized)
+  );
+}
+
+export function isMobileFacingUrlBlocked(value, { blockPrivate = false } = {}) {
   try {
     const raw = String(value || "").trim();
     if (!raw) {
       return true;
     }
     const url = new URL(hasProtocol(raw) ? raw : `http://${raw}`);
-    return isLoopbackHost(url.hostname);
+    return isLoopbackHost(url.hostname) || (blockPrivate && isPrivateLanHost(url.hostname));
   } catch {
     return true;
   }

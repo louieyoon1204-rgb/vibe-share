@@ -2,10 +2,12 @@ import QRCode from "qrcode";
 import { io } from "socket.io-client";
 import {
   TRANSFER_STATES,
+  apiUrlFromWebUrl,
   containsLoopbackUrlValue,
   formatBytes,
   isLoopbackHost,
   isMobileFacingUrlBlocked,
+  isPrivateLanHost,
   normalizeBaseUrl as normalizeSharedBaseUrl,
   resolveMobileServerBaseUrl,
   resolveMobileWebBaseUrl,
@@ -28,8 +30,11 @@ const RECOVERING_NOTICE = "이전 연결을 복구하고 있습니다.";
 const RECOVERED_NOTICE = "이전 연결을 복구했습니다.";
 const RECONNECT_NOTICE = "연결이 끊겼습니다. 다시 연결하세요.";
 const AUTO_JOINING_NOTICE = "연결 시도 중";
-const NETWORK_REQUIREMENT_NOTICE = "휴대폰과 PC는 같은 WiFi 또는 같은 핫스팟에 연결되어 있어야 합니다.";
-const NETWORK_FAILURE_FIRST_NOTICE = "같은 WiFi인지 먼저 확인하세요.";
+const LOCAL_NETWORK_REQUIREMENT_NOTICE = "휴대폰과 PC는 같은 WiFi 또는 같은 핫스팟에 연결되어 있어야 합니다.";
+const PUBLIC_CONNECTION_NOTICE = "휴대폰 카메라로 QR을 스캔하면 같은 전송방에 연결됩니다.";
+const LOCAL_NETWORK_FAILURE_FIRST_NOTICE = "같은 WiFi인지 먼저 확인하세요.";
+const PUBLIC_CONNECTION_FAILURE_NOTICE = "연결이 실패하면 새 QR을 다시 스캔하세요.";
+const PUBLIC_WEB_HOSTS = new Set(["app.getvibeshare.com", "app-staging.getvibeshare.com"]);
 const AUTO_JOIN_DELAYS_MS = [0, 1000, 2500];
 const JOIN_PHASES = {
   ROUTE_OPENED: "route_opened",
@@ -89,8 +94,8 @@ const mobileInitialApiBaseUrl = isMobileJoinMode ? (resolveMobileServerBaseUrlFr
 
 const state = {
   role: isMobileJoinMode ? "mobile" : "pc",
-  apiBaseUrl: isMobileJoinMode ? mobileInitialApiBaseUrl : normalizeBaseUrl(query.get("serverUrl") || savedWebSession?.apiBaseUrl || defaultApiBaseUrl()),
-  publicServerUrl: isMobileJoinMode ? mobileInitialApiBaseUrl : normalizeBaseUrl(query.get("serverUrl") || savedWebSession?.publicServerUrl || defaultApiBaseUrl()),
+  apiBaseUrl: isMobileJoinMode ? mobileInitialApiBaseUrl : initialPcApiBaseUrl(),
+  publicServerUrl: isMobileJoinMode ? mobileInitialApiBaseUrl : initialPcPublicServerUrl(),
   phoneWebUrl: "",
   joinUrl: routeJoinCode ? window.location.href : (savedSession?.joinUrl || recentSession?.joinUrl || ""),
   joinCode: routeJoinCode || savedSession?.session?.code || recentSession?.code || "",
@@ -166,6 +171,20 @@ if (state.role === "mobile") {
 }
 bindPageLifecycleEvents();
 
+function initialPcApiBaseUrl() {
+  if (isPublicWebRuntime()) {
+    return defaultApiBaseUrl();
+  }
+  return normalizeBaseUrl(query.get("serverUrl") || savedWebSession?.apiBaseUrl || defaultApiBaseUrl());
+}
+
+function initialPcPublicServerUrl() {
+  if (isPublicWebRuntime()) {
+    return defaultApiBaseUrl();
+  }
+  return normalizeBaseUrl(query.get("serverUrl") || savedWebSession?.publicServerUrl || defaultApiBaseUrl());
+}
+
 function renderPcShell() {
   document.documentElement.lang = "ko";
   app.innerHTML = `
@@ -180,8 +199,8 @@ function renderPcShell() {
 
     <main class="app-layout pc-layout">
       <section class="notice-card danger" id="localhostBanner" hidden>
-        <strong>휴대폰에서 열 수 있는 PC 주소가 필요합니다</strong>
-        <p id="localhostWarningText">같은 Wi-Fi에서 접속 가능한 LAN 주소로 QR을 다시 준비하세요.</p>
+        <strong>연결 주소를 확인하세요</strong>
+        <p id="localhostWarningText">로컬 개발에서는 같은 Wi-Fi에서 접속 가능한 LAN 주소가 필요합니다.</p>
       </section>
 
       <section class="session-warning" id="pcLifecycleNotice">
@@ -211,7 +230,7 @@ function renderPcShell() {
         </div>
 
         <p class="helper center" id="qrHelp">이 QR은 휴대폰 웹 연결용입니다.</p>
-        <p class="network-notice center">${NETWORK_REQUIREMENT_NOTICE}</p>
+        <p class="network-notice center">${networkRequirementNotice()}</p>
       </section>
 
       <section class="action-card" id="actionsCard" hidden aria-labelledby="actionsTitle">
@@ -326,7 +345,7 @@ function renderMobileShell() {
       <section class="mobile-connect-card">
         <h2 id="mobileTitle">연결 대기 중</h2>
         <p class="helper" id="mobileMessage">QR 정보를 확인하고 있습니다.</p>
-        <p class="network-notice">${NETWORK_REQUIREMENT_NOTICE}</p>
+        <p class="network-notice">${networkRequirementNotice()}</p>
         <div class="retry-area" id="mobileRetryArea" hidden>
           <p class="helper error" id="mobileErrorText"></p>
           <p class="code-line">6자리 코드 <strong id="mobileCodeBadge">------</strong></p>
@@ -704,7 +723,7 @@ async function recoverCurrentSession(_source = "manual") {
     state.connectionLost = true;
     state.lifecycleNotice = RECONNECT_NOTICE;
     if (state.role === "mobile") {
-      state.joinError = NETWORK_FAILURE_FIRST_NOTICE;
+      state.joinError = connectionFailureFirstNotice();
     }
   } finally {
     state.recovering = false;
@@ -789,6 +808,10 @@ function sessionMatchesCurrentRoute(session) {
 }
 
 function resolveQrRouteApiBaseUrl() {
+  if (isPublicWebRuntime()) {
+    return publicApiBaseUrlFromLocation() || defaultApiBaseUrl();
+  }
+
   return resolveMobileServerBaseUrl({
     currentUrl: window.location.href,
     apiPort: 4000
@@ -883,7 +906,7 @@ function scheduleAutoJoin(source, { resetAttempts = false, immediate = false, ha
     state.autoJoinFinalFailed = false;
   }
   if (state.autoJoinAttempt >= AUTO_JOIN_DELAYS_MS.length) {
-    showAutoJoinFallback(NETWORK_FAILURE_FIRST_NOTICE);
+    showAutoJoinFallback(connectionFailureFirstNotice());
     return;
   }
 
@@ -1420,6 +1443,18 @@ async function renderQrCode() {
 }
 
 function buildJoinUrl() {
+  if (isPublicWebRuntime()) {
+    if (!state.session?.code) {
+      return { url: "", error: "연결방을 준비하고 있습니다." };
+    }
+    const url = new URL(window.location.origin);
+    url.pathname = `/j/${state.session.code}`;
+    url.search = "";
+    url.searchParams.set("v", BUILD_ID);
+    url.hash = "";
+    return { url: url.toString(), error: "" };
+  }
+
   const webBaseUrl = resolveMobileWebBaseUrl({
     currentUrl: window.location.href,
     requestBaseUrl: state.serverInfo?.requestBaseUrl,
@@ -1461,6 +1496,18 @@ function isQrBlocked() {
 }
 
 function addressBlockReason() {
+  if (isPublicWebRuntime()) {
+    const webBaseUrl = publicWebBaseUrlFromLocation();
+    const serverBaseUrl = publicApiBaseUrlFromLocation() || state.publicServerUrl || state.apiBaseUrl;
+    if (!webBaseUrl || isProductionBlockedUrl(webBaseUrl)) {
+      return "공개 웹앱 주소를 확인할 수 없습니다.";
+    }
+    if (!serverBaseUrl || isProductionBlockedUrl(serverBaseUrl)) {
+      return "공개 API 주소를 확인할 수 없습니다.";
+    }
+    return "";
+  }
+
   const webBaseUrl = resolveMobileWebBaseUrl({
     currentUrl: window.location.href,
     requestBaseUrl: state.serverInfo?.requestBaseUrl,
@@ -1496,6 +1543,10 @@ function addressBlockReason() {
 }
 
 function choosePublicServerUrl(info) {
+  if (isPublicWebRuntime()) {
+    return publicApiBaseUrlFromLocation() || normalizeBaseUrl(info?.publicUrls?.api) || defaultApiBaseUrl();
+  }
+
   return resolveMobileServerBaseUrl({
     currentUrl: window.location.href,
     requestBaseUrl: info?.requestBaseUrl,
@@ -1513,6 +1564,10 @@ function choosePublicServerUrl(info) {
 }
 
 function choosePhoneWebUrl(info) {
+  if (isPublicWebRuntime()) {
+    return publicWebBaseUrlFromLocation() || normalizeBaseUrl(info?.publicUrls?.webApp) || "";
+  }
+
   return resolveMobileWebBaseUrl({
     currentUrl: window.location.href,
     requestBaseUrl: info?.requestBaseUrl,
@@ -2244,6 +2299,10 @@ function resolveMobileServerUrl(inputValue) {
 }
 
 function preferredMobileApiBaseUrl() {
+  if (isPublicWebRuntime()) {
+    return publicApiBaseUrlFromLocation() || defaultApiBaseUrl();
+  }
+
   return resolveMobileServerBaseUrl({
     currentUrl: window.location.href,
     requestBaseUrl: state.serverInfo?.requestBaseUrl,
@@ -2261,6 +2320,10 @@ function preferredMobileApiBaseUrl() {
 }
 
 function resolveMobileServerBaseUrlFromLocation() {
+  if (isPublicWebRuntime()) {
+    return publicApiBaseUrlFromLocation();
+  }
+
   return resolveMobileServerBaseUrl({
     currentUrl: window.location.href,
     apiPort: 4000
@@ -2290,7 +2353,9 @@ async function preflightMobileServer(serverUrl) {
 
 function readableConnectionError(error) {
   if (error?.message === "PC_SERVER_UNREACHABLE") {
-    return `${NETWORK_FAILURE_FIRST_NOTICE} PC 서버에 연결할 수 없습니다.`;
+    return isPublicWebRuntime()
+      ? `${connectionFailureFirstNotice()} API에 연결할 수 없습니다.`
+      : `${connectionFailureFirstNotice()} PC 서버에 연결할 수 없습니다.`;
   }
   if (error?.message === "STALE_ROUTE_SESSION_MISMATCH") {
     return "이전 QR 연결 정보가 감지되어 새 QR로 다시 연결합니다.";
@@ -2418,7 +2483,13 @@ function containsBlockedUrlFields(value, keyName = "") {
     }
     const keyLooksLikeUrl = /url|base|server|api|host/i.test(keyName);
     const valueLooksLikeUrl = /localhost|127\.|0\.0\.0\.0|::1|\[::1\]/i.test(trimmed) || /^[a-z][a-z\d+.-]*:\/\//i.test(trimmed);
-    return (keyLooksLikeUrl || valueLooksLikeUrl) && containsLoopbackUrlValue(trimmed);
+    if (!(keyLooksLikeUrl || valueLooksLikeUrl)) {
+      return false;
+    }
+    if (containsLoopbackUrlValue(trimmed)) {
+      return true;
+    }
+    return isPublicWebRuntime() && isProductionBlockedUrl(trimmed);
   }
   if (Array.isArray(value)) {
     return value.some((item) => containsBlockedUrlFields(item, keyName));
@@ -2599,10 +2670,19 @@ function setServerHint(message, isError = false) {
 }
 
 function defaultApiBaseUrl() {
+  const publicApiUrl = publicApiBaseUrlFromLocation();
+  if (isPublicWebRuntime() && publicApiUrl) {
+    return publicApiUrl;
+  }
+
   const envUrl = import.meta.env.VITE_SERVER_URL || import.meta.env.VITE_API_URL;
   if (envUrl) {
-    return normalizeBaseUrl(envUrl);
+    const normalizedEnvUrl = normalizeBaseUrl(envUrl);
+    if (!isPublicWebRuntime() || !isProductionBlockedUrl(normalizedEnvUrl)) {
+      return normalizedEnvUrl;
+    }
   }
+
   const { protocol, hostname } = window.location;
   const host = hostname || "localhost";
   const localProtocol = protocol === "https:" ? "https:" : "http:";
@@ -2624,6 +2704,40 @@ function defaultApiBaseUrl() {
   return `${protocol}//${host}`;
 }
 
+function isPublicWebRuntime() {
+  const hostname = String(window.location.hostname || "").toLowerCase();
+  return (
+    window.location.protocol === "https:" &&
+    (
+      PUBLIC_WEB_HOSTS.has(hostname) ||
+      (hostname.startsWith("app.") && !isPrivateLanHost(hostname)) ||
+      (hostname.startsWith("app-staging.") && !isPrivateLanHost(hostname))
+    )
+  );
+}
+
+function publicWebBaseUrlFromLocation() {
+  if (!isPublicWebRuntime()) {
+    return "";
+  }
+  return `${window.location.protocol}//${window.location.host}`;
+}
+
+function publicApiBaseUrlFromLocation() {
+  if (!isPublicWebRuntime()) {
+    return "";
+  }
+  return normalizeBaseUrl(apiUrlFromWebUrl(window.location.href, 4000));
+}
+
+function networkRequirementNotice() {
+  return isPublicWebRuntime() ? PUBLIC_CONNECTION_NOTICE : LOCAL_NETWORK_REQUIREMENT_NOTICE;
+}
+
+function connectionFailureFirstNotice() {
+  return isPublicWebRuntime() ? PUBLIC_CONNECTION_FAILURE_NOTICE : LOCAL_NETWORK_FAILURE_FIRST_NOTICE;
+}
+
 function normalizeBaseUrl(value) {
   return normalizeSharedBaseUrl(value);
 }
@@ -2641,7 +2755,11 @@ function isBlockedHost(hostname) {
 }
 
 function isBlockedMobileServerUrl(value) {
-  return isMobileFacingUrlBlocked(value);
+  return isPublicWebRuntime() ? isProductionBlockedUrl(value) : isMobileFacingUrlBlocked(value);
+}
+
+function isProductionBlockedUrl(value) {
+  return isMobileFacingUrlBlocked(value, { blockPrivate: true });
 }
 
 function isIpv4Address(hostname) {
@@ -2924,6 +3042,10 @@ function loadSavedWebSession() {
       sessionStorage.removeItem(WEB_SESSION_STORAGE_KEY);
       return null;
     }
+    if (isPublicWebRuntime() && normalizeBaseUrl(saved.apiBaseUrl) !== defaultApiBaseUrl()) {
+      sessionStorage.removeItem(WEB_SESSION_STORAGE_KEY);
+      return null;
+    }
     return saved;
   } catch {
     return null;
@@ -2977,7 +3099,7 @@ function loadRecentSession() {
 
 function mobileSafeUrl(value) {
   const normalized = normalizeBaseUrl(value);
-  if (!normalized || isMobileFacingUrlBlocked(normalized)) {
+  if (!normalized || (isPublicWebRuntime() ? isProductionBlockedUrl(normalized) : isMobileFacingUrlBlocked(normalized))) {
     return "";
   }
   return normalized;
