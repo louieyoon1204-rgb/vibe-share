@@ -1,0 +1,26 @@
+{
+  "name": "@vibe-share/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "db:migrate": "node src/db/migrate.js",
+    "cleanup": "node src/cleanup.js",
+    "smoke": "node src/smoke.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.958.0",
+    "@aws-sdk/s3-request-presigner": "^3.958.0",
+    "@socket.io/redis-adapter": "^8.3.0",
+    "@vibe-share/shared": "0.1.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "multer": "^2.1.1",
+    "pg": "^8.20.0",
+    "redis": "^5.11.0",
+    "socket.io": "^4.8.3"
+  }
+}

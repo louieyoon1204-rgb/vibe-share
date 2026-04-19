@@ -1,0 +1,32 @@
+{
+  "name": "vibe-share",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20.19.4"
+  },
+  "scripts": {
+    "dev": "concurrently -n server,web -c green,cyan \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:server": "npm run dev -w apps/server",
+    "dev:web": "npm run dev -w apps/web",
+    "dev:mobile": "npm run start -w apps/mobile",
+    "db:migrate": "npm run db:migrate -w apps/server",
+    "cleanup": "npm run cleanup -w apps/server",
+    "lint": "npm run lint --workspaces --if-present",
+    "smoke": "npm run smoke --workspaces --if-present",
+    "smoke:mobile-url": "node scripts/mobile-facing-url-smoke.mjs",
+    "smoke:integration": "node scripts/integration-smoke.mjs",
+    "smoke:prod-foundation": "node scripts/production-foundation-smoke.mjs",
+    "smoke:minio": "node scripts/minio-smoke.mjs",
+    "test": "npm run smoke && npm run smoke:mobile-url && npm run smoke:integration && npm run smoke:prod-foundation",
+    "staging:readiness": "powershell -ExecutionPolicy Bypass -File scripts/staging-readiness.ps1",
+    "github:readiness": "powershell -ExecutionPolicy Bypass -File scripts/github-readiness.ps1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

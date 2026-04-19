@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: vibe-share-postgres
+    environment:
+      POSTGRES_DB: vibeshare
+      POSTGRES_USER: vibeshare
+      POSTGRES_PASSWORD: vibeshare
+    ports:
+      - "5432:5432"
+    volumes:
+      - vibe_share_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vibeshare -d vibeshare"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:8-alpine
+    container_name: vibe-share-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - vibe_share_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: vibe-share-minio
+    environment:
+      MINIO_ROOT_USER: vibeshare
+      MINIO_ROOT_PASSWORD: vibeshare-secret
+    command: ["server", "/data", "--console-address", ":9001"]
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - vibe_share_minio:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio-create-bucket:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 vibeshare vibeshare-secret &&
+      mc mb --ignore-existing local/vibe-share-transfers &&
+      mc anonymous set none local/vibe-share-transfers
+      "
+
+volumes:
+  vibe_share_postgres:
+  vibe_share_redis:
+  vibe_share_minio:

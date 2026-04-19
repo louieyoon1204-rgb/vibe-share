@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Vibe Share",
+    "slug": "vibe-share",
+    "version": "0.1.0",
+    "scheme": "vibeshare",
+    "description": "PC 화면의 Vibe Share QR로 휴대폰을 연결해 같은 세션에서 파일을 주고받는 모바일 앱입니다.",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f4f7f6"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "bundleIdentifier": "app.vibeshare.mobile",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "PC 화면의 QR 코드를 스캔하려면 카메라 권한이 필요합니다.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "app.vibeshare.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0f766e"
+      },
+      "permissions": [
+        "CAMERA",
+        "INTERNET"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "PC 화면의 QR 코드를 스캔하려면 카메라 권한이 필요합니다."
+        }
+      ],
+      "expo-sharing"
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
+  }
+}
