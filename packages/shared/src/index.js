@@ -131,7 +131,7 @@ export const translations = {
     directPhoneAddressHelp: "휴대폰 Safari로 웹을 직접 열어야 한다면 이 주소만 사용하세요. localhost는 금지입니다.",
     appPairingAddressHelp: "이 주소가 Vibe Share 세션 QR에 들어갑니다. 앱 안에서 QR을 스캔하면 자동으로 입력됩니다.",
     localhostInputWarning: "휴대폰용 주소가 localhost입니다. 이 QR로는 아이폰이 PC에 연결할 수 없습니다.",
-    publicServerLocalhostError: "휴대폰용 서버 주소가 localhost라 세션을 만들 수 없습니다. 서버 확인을 눌러 감지된 PC LAN IP를 사용하거나 직접 http://PC_LAN_IP:4000 형식으로 입력하세요.",
+    publicServerLocalhostError: "휴대폰용 서버 주소가 localhost라 세션을 만들 수 없습니다. 서버 확인을 눌러 감지된 PC LAN IP를 사용하거나 직접 PC LAN IP 주소를 입력하세요.",
     checkServer: "서버 확인",
     createSession: "새 세션 만들기",
     serverHintStart: "서버를 먼저 실행하세요: npm.cmd run dev:server",
@@ -179,7 +179,7 @@ export const translations = {
     detectedServerButton: "감지된 PC LAN 주소 사용",
     clearServerButton: "서버 주소 지우기",
     localhostBlockedTitle: "localhost로는 연결할 수 없습니다",
-    localhostBlockedMessage: "휴대폰의 localhost는 PC가 아니라 휴대폰 자신입니다. PC LAN IP 주소 예: http://192.168.0.23:4000 를 사용하세요.",
+    localhostBlockedMessage: "휴대폰의 localhost는 PC가 아니라 휴대폰 자신입니다. PC LAN IP 주소를 사용하세요.",
     qrLocalhostBlockedMessage: "이 QR에는 localhost 서버 주소가 들어 있습니다. PC 웹에서 서버 확인을 눌러 LAN IP가 들어간 QR을 다시 만드세요.",
     localhostFieldWarning: "현재 서버 주소가 localhost입니다. 아이폰에서는 반드시 PC LAN IP를 사용해야 합니다.",
     scanInstruction: "PC 화면의 QR 코드를 비춰 주세요.",
@@ -191,7 +191,7 @@ export const translations = {
     sentToPc: "PC로 보낸 파일",
     localhostWarning: "휴대폰에서 localhost는 PC가 아니라 휴대폰 자신입니다. PC LAN IP를 사용하세요.",
     pairingQrInvalid: "Vibe Share QR이 아닙니다. 수동 코드를 사용하세요.",
-    serverRequired: "서버 주소를 입력하세요. 예: http://192.168.0.23:4000",
+    serverRequired: "서버 주소를 입력하세요. 로컬 개발에서는 PC LAN IP 주소를 사용합니다.",
     codeRequired: "6자리 숫자 코드를 입력하세요.",
     transferState: {
       created: "생성됨",
@@ -272,7 +272,7 @@ export const translations = {
     directPhoneAddressHelp: "Use only this address if you open the web UI from phone Safari. Do not use localhost.",
     appPairingAddressHelp: "This address goes into the Vibe Share session QR. The app fills it automatically after scanning.",
     localhostInputWarning: "The phone URL is localhost. An iPhone cannot reach the PC with this QR.",
-    publicServerLocalhostError: "The phone server URL is localhost, so a session cannot be created. Press Check server to use the detected PC LAN IP, or enter http://PC_LAN_IP:4000 manually.",
+    publicServerLocalhostError: "The phone server URL is localhost, so a session cannot be created. Press Check server to use the detected PC LAN IP, or enter the PC LAN IP address manually.",
     checkServer: "Check server",
     createSession: "Create new session",
     serverHintStart: "Start the server first: npm.cmd run dev:server",
@@ -320,7 +320,7 @@ export const translations = {
     detectedServerButton: "Use detected PC LAN address",
     clearServerButton: "Clear server address",
     localhostBlockedTitle: "localhost cannot connect",
-    localhostBlockedMessage: "On a phone, localhost means the phone itself, not the PC. Use the PC LAN IP, for example http://192.168.0.23:4000.",
+    localhostBlockedMessage: "On a phone, localhost means the phone itself, not the PC. Use the PC LAN IP address.",
     qrLocalhostBlockedMessage: "This QR contains a localhost server URL. Press Check server on the PC web page and create a new QR with the LAN IP.",
     localhostFieldWarning: "The current server URL is localhost. On iPhone, use the PC LAN IP address.",
     scanInstruction: "Point the camera at the PC QR.",
@@ -332,7 +332,7 @@ export const translations = {
     sentToPc: "Files sent to PC",
     localhostWarning: "On a phone, localhost means the phone itself. Use the PC LAN IP.",
     pairingQrInvalid: "This is not a Vibe Share QR. Use the manual code.",
-    serverRequired: "Enter a server URL, for example http://192.168.0.23:4000",
+    serverRequired: "Enter a server URL. In local development, use the PC LAN IP address.",
     codeRequired: "Enter the 6-digit code."
   }
 };

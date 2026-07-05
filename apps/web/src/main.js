@@ -2893,8 +2893,8 @@ function defaultApiBaseUrl() {
   if (host.startsWith("app.")) {
     return `${protocol}//api.${host.slice("app.".length)}`;
   }
-  if (host === "staging.vibeshare.app") {
-    return "https://api-staging.vibeshare.app";
+  if (host === "staging.getvibeshare.com") {
+    return "https://api-staging.getvibeshare.com";
   }
 
   return `${protocol}//${host}`;

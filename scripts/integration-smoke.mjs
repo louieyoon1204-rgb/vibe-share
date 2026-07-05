@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import { spawn } from "node:child_process";
 import fsp from "node:fs/promises";
+import net from "node:net";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
@@ -11,11 +12,30 @@ import { io } from "socket.io-client";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
-const port = 4100 + Math.floor(Math.random() * 1000);
+const port = await findOpenPort();
 const baseUrl = `http://127.0.0.1:${port}`;
 const uploadDir = path.join(repoRoot, ".tmp", "integration-uploads");
 const metadataFile = path.join(repoRoot, ".tmp", "integration-metadata.json");
 const useConfiguredDrivers = process.env.INTEGRATION_USE_CONFIG_DRIVERS === "true";
+
+function findOpenPort() {
+  return new Promise((resolve, reject) => {
+    const probe = net.createServer();
+    probe.unref();
+    probe.once("error", reject);
+    probe.listen(0, "0.0.0.0", () => {
+      const address = probe.address();
+      const selectedPort = typeof address === "object" && address ? address.port : 0;
+      probe.close(() => {
+        if (selectedPort > 0) {
+          resolve(selectedPort);
+          return;
+        }
+        reject(new Error("Could not allocate a free integration smoke port."));
+      });
+    });
+  });
+}
 
 const server = spawn(process.execPath, ["apps/server/src/index.js"], {
   cwd: repoRoot,

@@ -10,7 +10,7 @@
       "channel": "development",
       "env": {
         "APP_VARIANT": "development",
-        "EXPO_PUBLIC_SERVER_URL": "https://api-staging.vibeshare.app"
+        "EXPO_PUBLIC_SERVER_URL": "https://api-staging.getvibeshare.com"
       },
       "ios": {
         "simulator": false
@@ -24,7 +24,7 @@
       "channel": "preview",
       "env": {
         "APP_VARIANT": "preview",
-        "EXPO_PUBLIC_SERVER_URL": "https://api-staging.vibeshare.app"
+        "EXPO_PUBLIC_SERVER_URL": "https://api-staging.getvibeshare.com"
       },
       "ios": {
         "simulator": false
@@ -39,7 +39,7 @@
       "autoIncrement": true,
       "env": {
         "APP_VARIANT": "production",
-        "EXPO_PUBLIC_SERVER_URL": "https://api.vibeshare.app"
+        "EXPO_PUBLIC_SERVER_URL": "https://api.getvibeshare.com"
       },
       "ios": {
         "simulator": false
