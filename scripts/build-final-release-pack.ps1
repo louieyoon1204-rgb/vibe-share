@@ -40,6 +40,9 @@ Copy-Path (Join-Path $Root ".env.staging.example") $PackRoot
 Copy-Path (Join-Path $Root "docs\deployment.md") $PackRoot
 Copy-Path (Join-Path $Root "docs\site-map.md") $PackRoot
 Copy-Path (Join-Path $Root "docs\launch") (Join-Path $PackRoot "launch")
+if (Test-Path (Join-Path $Root "docs\final-release-ready")) {
+  Copy-Item -Path (Join-Path $Root "docs\final-release-ready\*") -Destination $PackRoot -Recurse -Force
+}
 Copy-Path (Join-Path $Root "docs\store-assets") (Join-Path $PackRoot "store-assets")
 Copy-Path (Join-Path $Root "apps\mobile\assets") (Join-Path $PackRoot "mobile-assets")
 New-Item -ItemType Directory -Force (Join-Path $PackRoot "mobile-config") | Out-Null

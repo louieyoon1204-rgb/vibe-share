@@ -1,13 +1,13 @@
-# Architecture
+﻿# Architecture
 
-Vibe Share is still a monorepo, but the server now has explicit local fallback and production-oriented foundations.
+Vibe Share is a monorepo with a public web-first deployment and local fallback modes.
 
 ## Product surfaces
 
-- Official site: `https://vibeshare.app`. This is the planned public marketing/support/beta site. DNS and hosting are not configured in this repo.
-- Web app: `https://app.vibeshare.app`. Implemented in `apps/web`; this is the PC screen users open to create a session, show the Vibe Share session QR, and send/receive files.
-- API: `https://api.vibeshare.app`. Implemented in `apps/server`; this owns API, relay, status, auth foundation, metadata, storage adapters, health, and admin operator routes.
-- Mobile app: `Vibe Share`. Implemented in `apps/mobile`; private beta currently runs through Expo Go, with native store builds left for launch hardening.
+- Official site: `https://getvibeshare.com`. This is optional marketing/support surface for later expansion.
+- Web app: `https://app.getvibeshare.com`. Implemented in `apps/web`; this is the PC screen users open to create a session, show the Vibe Share session QR, and send/receive files.
+- API: `https://api.getvibeshare.com`. Implemented in `apps/server`; this owns API, relay, status, auth foundation, metadata, storage adapters, health, and admin operator routes.
+- Mobile app: `Vibe Share`. Implemented in `apps/mobile`; native store builds are not the default public flow. The current public default is mobile web through the QR join route.
 
 The server root page is intentionally a status/connection guide, not the consumer product UI. `/admin/status` and related admin routes are operator surfaces.
 
@@ -16,8 +16,8 @@ The planned site map is documented in `docs/site-map.md`; the static official-si
 ## Apps and packages
 
 - `apps/server`: API/relay/status/auth foundation/metadata server with Express, Socket.IO, PostgreSQL/JSON metadata store, Redis/memory cache, local/S3 storage adapters.
-- `apps/web`: Official web app / PC screen. Creates sessions, stores short-lived device trust in browser session storage, shows QR/manual code, uploads through the resumable API, and receives phone transfers.
-- `apps/mobile`: Vibe Share mobile app. Scans the PC QR or joins by code, keeps the session device trust token in memory, and keeps the small-file compatibility path so first-run mobile setup stays simple.
+- `apps/web`: Official public web app. Creates sessions, stores short-lived device trust in browser session storage, shows QR/manual code, uploads through the resumable API, and receives phone transfers.
+- `apps/mobile`: Expo managed app kept for development and future native app work.
 - `packages/shared`: Transfer states, locale utilities, partial translations, RTL helpers, locale-aware formatting.
 
 ## Runtime modes

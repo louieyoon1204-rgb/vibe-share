@@ -1,29 +1,27 @@
-# Deployment
+﻿# Deployment
 
-This document fixes the staging/production deployment shape. Codex can prepare the repo, but actual deployment needs external DNS, hosting accounts, provider secrets, Apple/Google accounts, and legal approval.
+This document records the current public deployment shape and the remaining optional staging/native-app paths.
 
-## One-stack Target
+## Current Public Stack
 
-Use one stack for staging and production:
-
-- Site: static hosting
-- Web app: static hosting
-- API: Node.js hosting
-- Database: PostgreSQL
-- Cache/realtime: Redis
-- File storage: S3-compatible object storage
-- Mobile build: EAS Build
+- Web app: Cloudflare Pages
+- API: Railway Node.js service
+- Database: Railway Postgres
+- Cache/realtime: Railway Redis
+- File storage: Cloudflare R2
+- DNS/TLS: Cloudflare
+- Mobile build: optional EAS track, not the current public default
 
 ## URLs
 
 ```text
-staging.vibeshare.app      staging site
-app-staging.vibeshare.app  staging PC/mobile web app
-api-staging.vibeshare.app  staging API
+getvibeshare.com              production site
+app.getvibeshare.com          production PC/mobile web app
+api.getvibeshare.com          production API
 
-vibeshare.app              production site
-app.vibeshare.app          production PC/mobile web app
-api.vibeshare.app          production API
+staging.getvibeshare.com      optional staging site
+app-staging.getvibeshare.com  optional staging web app
+api-staging.getvibeshare.com  optional staging API
 ```
 
 ## Product Flow
@@ -73,12 +71,12 @@ Detailed Railway steps are in `docs/launch/railway-api-service.md`.
 | --- | --- | --- | --- | --- |
 | local demo | `http://localhost:5173` | `http://localhost:4000` | LAN host from `/api/info` | JSON/memory/local disk |
 | production-like local | `http://localhost:5173` | `http://localhost:4000` | LAN host from `/api/info` | Docker PostgreSQL/Redis/MinIO |
-| staging | `https://app-staging.vibeshare.app` | `https://api-staging.vibeshare.app` | HTTPS public host only | hosted PostgreSQL/Redis/S3 |
-| production | `https://app.vibeshare.app` | `https://api.vibeshare.app` | HTTPS public host only | hosted PostgreSQL/Redis/S3 |
+| production | `https://app.getvibeshare.com` | `https://api.getvibeshare.com` | HTTPS public host only | hosted PostgreSQL/Redis/S3 |
+| staging | `https://app-staging.getvibeshare.com` | `https://api-staging.getvibeshare.com` | HTTPS public host only | hosted PostgreSQL/Redis/S3 |
 
 Mobile-facing URLs must never contain `localhost`, `127.*`, `0.0.0.0`, `::1`, or an empty host.
 
-## Required Secrets
+## Required Production Secrets
 
 Put staging and production values in the hosting provider secret manager.
 
@@ -103,46 +101,46 @@ Cloudflare R2 values must use the S3 API account endpoint: `S3_ENDPOINT=https://
 
 ## API Environment
 
-Staging:
-
-```env
-APP_MODE=production
-CORS_ORIGIN=https://app-staging.vibeshare.app
-DATABASE_DRIVER=postgres
-CACHE_DRIVER=redis
-SOCKET_IO_ADAPTER=redis
-STORAGE_DRIVER=s3
-PUBLIC_SITE_URL=https://staging.vibeshare.app
-PUBLIC_WEB_APP_URL=https://app-staging.vibeshare.app
-PUBLIC_API_URL=https://api-staging.vibeshare.app
-```
-
 Production:
 
 ```env
 APP_MODE=production
-CORS_ORIGIN=https://app.vibeshare.app
+CORS_ORIGIN=https://app.getvibeshare.com
 DATABASE_DRIVER=postgres
 CACHE_DRIVER=redis
 SOCKET_IO_ADAPTER=redis
 STORAGE_DRIVER=s3
-PUBLIC_SITE_URL=https://vibeshare.app
-PUBLIC_WEB_APP_URL=https://app.vibeshare.app
-PUBLIC_API_URL=https://api.vibeshare.app
+PUBLIC_SITE_URL=https://getvibeshare.com
+PUBLIC_WEB_APP_URL=https://app.getvibeshare.com
+PUBLIC_API_URL=https://api.getvibeshare.com
+```
+
+Optional staging:
+
+```env
+APP_MODE=production
+CORS_ORIGIN=https://app-staging.getvibeshare.com
+DATABASE_DRIVER=postgres
+CACHE_DRIVER=redis
+SOCKET_IO_ADAPTER=redis
+STORAGE_DRIVER=s3
+PUBLIC_SITE_URL=https://staging.getvibeshare.com
+PUBLIC_WEB_APP_URL=https://app-staging.getvibeshare.com
+PUBLIC_API_URL=https://api-staging.getvibeshare.com
 ```
 
 ## Web Build Environment
 
-Staging:
-
-```env
-VITE_SERVER_URL=https://api-staging.vibeshare.app
-```
-
 Production:
 
 ```env
-VITE_SERVER_URL=https://api.vibeshare.app
+VITE_SERVER_URL=https://api.getvibeshare.com
+```
+
+Optional staging:
+
+```env
+VITE_SERVER_URL=https://api-staging.getvibeshare.com
 ```
 
 ## Mobile Build
@@ -168,9 +166,9 @@ Scheme: vibeshare
 ## Health Checks
 
 ```powershell
-curl.exe https://api-staging.vibeshare.app/health
-curl.exe https://api-staging.vibeshare.app/api/info
-curl.exe https://api-staging.vibeshare.app/admin/status -H "Authorization: Bearer <ADMIN_TOKEN>"
+curl.exe https://api.getvibeshare.com/health
+curl.exe https://api.getvibeshare.com/api/info
+curl.exe https://api.getvibeshare.com/admin/status -H "Authorization: Bearer <ADMIN_TOKEN>"
 ```
 
 Expected:
@@ -182,14 +180,14 @@ Expected:
 - fallback warnings: empty
 - mobile web/API URLs use public HTTPS hosts
 
-## Deployment Order
+## Deployment Order For A New Environment
 
 1. Create hosted PostgreSQL, Redis, and S3-compatible bucket.
 2. Deploy API with staging secrets.
-3. Point `api-staging.vibeshare.app` to API hosting and enable TLS.
+3. Point `api-staging.getvibeshare.com` to API hosting and enable TLS.
 4. Run `npm.cmd run db:migrate` against staging DB.
-5. Deploy web app with `VITE_SERVER_URL=https://api-staging.vibeshare.app`.
-6. Point `app-staging.vibeshare.app` to web hosting and enable TLS.
+5. Deploy web app with `VITE_SERVER_URL=https://api-staging.getvibeshare.com`.
+6. Point `app-staging.getvibeshare.com` to web hosting and enable TLS.
 7. Verify `/health`, `/admin/status`, and `/api/info`.
 8. Test QR join, code join, PC -> phone, and phone -> PC.
 9. Build EAS preview profiles for iOS and Android.
@@ -197,11 +195,8 @@ Expected:
 
 ## External Boundary
 
-Codex cannot complete these outside-repo actions:
+Already completed for the current public web-first deployment: DNS, web hosting, API hosting, Railway Postgres/Redis, R2, and TLS. Future native app/store launch still needs:
 
-- buy/configure DNS
-- create hosting accounts
 - create Apple/Google developer accounts
 - upload signing credentials
-- issue production secrets
 - complete legal/privacy review

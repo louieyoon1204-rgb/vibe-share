@@ -1,4 +1,4 @@
-# Store Submission Checklist
+﻿# Store Submission Checklist
 
 Current state: the repo is ready up to TestFlight / Google Play internal testing handoff. Actual submission still requires Apple/Google accounts, Expo/EAS credentials, live staging, privacy/support URLs, and final screenshots/assets.
 
@@ -9,8 +9,8 @@ App name: Vibe Share
 iOS bundle id: app.vibeshare.mobile
 Android package: app.vibeshare.mobile
 URL scheme: vibeshare
-Primary staging API: https://api-staging.vibeshare.app
-Production API: https://api.vibeshare.app
+Primary staging API: https://api-staging.getvibeshare.com
+Production API: https://api.getvibeshare.com
 ```
 
 ## EAS Build Profiles

@@ -1,32 +1,66 @@
 # Pricing Draft
 
-Current repo has no billing implementation.
+현재 결제 기능은 구현되어 있지 않습니다. 가격은 홍보 후 사용자 반응을 보며 결정합니다.
 
-## Beta
+## 베타
 
 ```text
-Free for trusted testers.
+무료 베타
 ```
 
-## Public launch options
+포함:
 
-Decision required before launch:
+- QR 연결
+- 6자리 코드 fallback
+- PC -> phone
+- phone -> PC
+- 수락/거절
+- 임시 파일 전송
 
-- Free personal plan
-- Paid pro plan
-- Team plan
+## 공개 출시 가격 초안
 
-## Do not promise yet
+### Free
 
-- unlimited storage
-- permanent file hosting
-- enterprise admin controls
-- account billing
+개인 사용자가 가볍게 파일을 옮기는 용도.
 
-## Owner decision needed
+가능한 제한:
 
-Choose whether Vibe Share launches as:
+- 월 전송량 제한
+- 파일 크기 제한
+- 짧은 보관 시간
 
-1. free utility
-2. freemium product
-3. paid pro tool
+### Pro
+
+자주 쓰는 개인 사용자용.
+
+가능한 제공:
+
+- 더 큰 파일 제한
+- 더 긴 다운로드 가능 시간
+- 전송 기록 개선
+- 우선 지원
+
+### Team
+
+소규모 팀용 초안.
+
+가능한 제공:
+
+- 팀 관리
+- 감사 로그
+- 정책 제한
+- 관리자 지원
+
+## 지금 약속하지 않을 것
+
+- 무제한 저장
+- 영구 파일 호스팅
+- 엔터프라이즈 관리자 기능
+- SSO
+- 법무 검토가 끝난 보안 보증
+
+## 당장 사용자에게 말할 가격 문구
+
+```text
+현재는 무료 베타로 운영합니다. 정식 가격은 사용 패턴과 운영 비용을 확인한 뒤 정리할 예정입니다.
+```

@@ -1,38 +1,51 @@
 # Tester Feedback Template
 
-## Device
+## 기본 정보
 
 ```text
-Phone model:
-iOS/Android version:
-PC browser:
-Network:
-Build type: mobile web / TestFlight / Play internal / EAS preview
+이름:
+테스트 날짜:
+휴대폰 모델:
+iOS/Android 버전:
+PC 브라우저:
+테스트 주소: https://app.getvibeshare.com
 ```
 
-## What You Tested
+## 테스트한 항목
 
-- [ ] QR scan
-- [ ] 6-digit code fallback
+- [ ] PC에서 웹앱 열림
+- [ ] QR 표시
+- [ ] QR 스캔 연결
+- [ ] 6자리 코드 연결
 - [ ] PC -> phone
 - [ ] phone -> PC
-- [ ] accept
-- [ ] reject
-- [ ] mobile download button
+- [ ] 작은 파일
+- [ ] 여러 파일
+- [ ] 수락
+- [ ] 거절
+- [ ] 다운로드
 
-## Result
+## 결과
 
 ```text
-Worked:
-Did not work:
-Confusing part:
-Phone URL shown:
-Screenshot/video link:
+잘 된 것:
+안 된 것:
+헷갈린 부분:
+오류 문구:
+전송 방향:
+파일 종류와 크기:
+스크린샷/영상 링크:
 ```
 
-## Severity
+## 심각도
 
-- [ ] Blocks transfer
-- [ ] Confusing but can continue
-- [ ] Visual/copy issue
-- [ ] Suggestion
+- [ ] 전송을 못 함
+- [ ] 전송은 되지만 많이 헷갈림
+- [ ] 작은 문구/화면 문제
+- [ ] 개선 제안
+
+## 한 줄 평가
+
+```text
+다시 쓸 것 같은가요? 왜 그렇게 느꼈나요?
+```

@@ -1,31 +1,48 @@
 # Positioning
 
-## One-line
+## 제품 한 줄 소개
 
-PC 카메라 없이 QR로 휴대폰과 PC를 연결해 파일을 주고받는 앱.
+QR로 PC와 휴대폰을 연결해 파일을 주고받는 web-first 파일 전송 서비스.
 
-## User problem
+## 사용자 문제
 
-PC와 휴대폰 사이에서 파일을 옮길 때 케이블, 메신저, 이메일, 클라우드 로그인이 번거롭습니다.
+PC와 휴대폰 사이 파일을 옮길 때 케이블, 메신저, 이메일, 클라우드 로그인이 번거롭습니다. PC에 카메라가 없는 경우도 많습니다.
 
-## Product answer
+## 제품 답
 
-PC에서 파일을 선택하고 QR을 보여주면, 휴대폰 앱이 QR을 스캔해 바로 전송 세션에 들어갑니다.
+PC에서 `https://app.getvibeshare.com`을 열고 QR을 보여줍니다. 휴대폰이 QR을 스캔하면 같은 세션에 들어가고, 연결 후 PC -> phone과 phone -> PC를 모두 사용할 수 있습니다.
 
-## Primary audience
+## 핵심 메시지
 
-- 개인 사용자
-- 비기술 사용자
-- 케이블 없이 PC와 휴대폰 사이 파일을 옮기고 싶은 사용자
-- 베타 단계의 trusted testers
-
-## Differentiators
-
+- 설치 없이 웹에서 바로 시작
 - PC 카메라 불필요
-- QR 한 번으로 같은 세션 연결
-- PC -> phone, phone -> PC 양방향
-- 받는 쪽 수락/거절
+- QR 또는 6자리 코드로 연결
+- 같은 연결에서 양방향 전송
+- 받는 쪽이 수락/거절
 
-## Current launch boundary
+## 주 사용자
 
-Store beta is ready after staging and EAS account setup. Public launch still needs legal/privacy review, production scanner, final store assets, and account/payment decisions.
+- PC와 휴대폰 사이 파일을 자주 옮기는 개인 사용자
+- 케이블이나 메신저 전송이 번거로운 사용자
+- 비기술 사용자
+- 베타 테스터
+
+## 말하면 좋은 점
+
+- "PC에는 카메라가 필요 없습니다."
+- "휴대폰이 QR을 한 번 스캔하면 연결됩니다."
+- "같은 연결에서 양쪽 방향으로 보낼 수 있습니다."
+- "받기 전에 파일 이름과 크기를 확인할 수 있습니다."
+
+## 피해야 할 과장
+
+- "완전 안전"
+- "해킹 불가"
+- "영구 보관"
+- "무제한 전송"
+- "모든 파일 악성코드 검사 완료"
+- "네이티브 앱 background upload 완료"
+
+## 현재 런치 경계
+
+현재 공개 기본은 web-first입니다. 네이티브 Expo 앱 코드는 남아 있지만, 홍보와 사용자 안내는 공개 웹앱 `https://app.getvibeshare.com`을 기준으로 합니다.

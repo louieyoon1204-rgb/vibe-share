@@ -1,87 +1,75 @@
 # Beta Operator Checklist
 
-테스터에게 보내기 전에 아래 순서로 확인합니다.
+홍보나 테스터 초대 직전에 운영자가 그대로 따라 하는 체크리스트입니다.
 
-## 1. 전체 검증
+## 1. 공개 서비스 열림
+
+- [ ] PC에서 `https://app.getvibeshare.com`이 열린다.
+- [ ] `https://api.getvibeshare.com/health`가 정상 응답한다.
+- [ ] `https://api.getvibeshare.com/api/info`가 정상 응답한다.
+- [ ] 일반 사용자 안내에는 `https://app.getvibeshare.com`만 적혀 있다.
+
+## 2. 연결
+
+- [ ] PC 화면에 QR이 보인다.
+- [ ] PC 화면에 6자리 코드가 보인다.
+- [ ] 휴대폰 카메라로 QR을 스캔하면 연결된다.
+- [ ] 6자리 코드를 직접 입력해도 연결된다.
+- [ ] 연결 상태가 PC와 휴대폰 양쪽에서 명확하게 보인다.
+
+## 3. PC -> phone
+
+- [ ] PC에서 `휴대폰으로 파일 보내기`를 누른다.
+- [ ] 작은 파일 1개를 보낸다.
+- [ ] 여러 파일을 보낸다.
+- [ ] 휴대폰에서 파일 메타데이터를 확인한다.
+- [ ] 휴대폰에서 수락 후 다운로드한다.
+- [ ] 휴대폰에서 거절했을 때 PC에 실패/거절 상태가 보인다.
+
+## 4. phone -> PC
+
+- [ ] 휴대폰에서 `PC로 파일 보내기`를 누른다.
+- [ ] 작은 파일 1개를 보낸다.
+- [ ] 여러 파일을 보낸다.
+- [ ] PC에서 파일 메타데이터를 확인한다.
+- [ ] PC에서 수락 후 다운로드한다.
+- [ ] PC에서 거절했을 때 휴대폰에 실패/거절 상태가 보인다.
+
+## 5. 세션과 복구
+
+- [ ] 세션 만료 후 새 QR을 만들 수 있다.
+- [ ] 연결이 끊겼을 때 새 QR로 다시 연결할 수 있다.
+- [ ] 전송 중 페이지를 닫으면 실패할 수 있다는 안내가 보인다.
+- [ ] 실패 메시지가 한국어로 이해 가능하다.
+
+## 6. 운영 확인
+
+- [ ] Railway API 로그에서 최근 요청이 보인다.
+- [ ] Railway Postgres/Redis가 정상 상태다.
+- [ ] Cloudflare Pages 최근 배포가 성공 상태다.
+- [ ] Cloudflare DNS에서 `app.getvibeshare.com`과 `api.getvibeshare.com`이 유지되어 있다.
+- [ ] R2 bucket이 존재한다.
+- [ ] R2 CORS와 업로드 권한이 현재 운영 값과 맞다.
+- [ ] 오래된 테스트 파일/임시 파일이 필요 이상으로 쌓이지 않았다.
+
+## 7. 홍보 시작 전 마지막 체크
+
+- [ ] `docs/launch/landing-page-copy.md`가 현재 주소를 사용한다.
+- [ ] `docs/launch/support-faq.md`가 현재 web-first 흐름을 설명한다.
+- [ ] `docs/launch/beta-invite-email.md`에 사용자 주소가 들어 있다.
+- [ ] `docs/launch/tester-feedback-template.md`가 최신 질문을 담고 있다.
+- [ ] `deliverables/final-release-ready/PROMO_READY_STATUS.md`가 "홍보만 남음"으로 정리되어 있다.
+
+## 8. 실행 명령
 
 ```powershell
 cd C:\Users\ycl12\Desktop\vibe-share
-powershell -ExecutionPolicy Bypass -File scripts\run-full-check.ps1
-npm.cmd run staging:readiness
+npm.cmd install
+npm.cmd test
+npm.cmd run smoke:integration
+npm.cmd run build -w apps/web
+npm.cmd run ops:public-check
+curl.exe https://api.getvibeshare.com/health
+curl.exe https://api.getvibeshare.com/api/info
+curl.exe https://app.getvibeshare.com
 ```
-
-통과 기준:
-
-- `npm install` 통과
-- `npm test` 통과
-- integration smoke 통과
-- MinIO smoke 통과
-- cleanup 통과
-- web build 통과
-- mobile iOS export 통과
-- Docker PostgreSQL/Redis/MinIO healthy
-- `/health`, `/admin/health`, `/admin/status`, `/api/info` 응답
-- staging readiness gate 통과
-
-## Beta stable 기준
-
-2026-04-19 기준 QR 스캔, 자동 연결, PC -> 휴대폰 전송, 휴대폰 -> PC 전송이 확인된 상태를 beta-stable 기준으로 둡니다.
-
-상태 기준 문서:
-
-- `BETA_STABLE_STATUS.md`
-- `docs/launch/staging-deploy-checklist.md`
-
-## 2. Production-like local mode 시작
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\start-production-like.ps1 -ResetInfra
-```
-
-PC 웹:
-
-```text
-http://localhost:5173
-```
-
-## 3. 테스터에게 안내할 기본 흐름
-
-1. PC 웹 열기
-2. 휴대폰 카메라로 QR 스캔
-3. 연결 후 보낼지 받을지 선택
-4. 파일 전송
-
-## 4. 꼭 말할 것
-
-- PC와 휴대폰은 같은 Wi-Fi에 있어야 합니다.
-- 휴대폰에서 `localhost`를 열면 안 됩니다.
-- 파일 선택은 연결 후에 합니다.
-- PC -> 휴대폰, 휴대폰 -> PC 모두 테스트합니다.
-- 받는 쪽은 수락 또는 거절을 선택합니다.
-- PC -> 휴대폰 다운로드는 휴대폰의 같은 페이지에서 `다운로드`를 눌러 시작합니다.
-
-## 5. 테스터에게 보낼 파일
-
-- `IPHONE_TEST_STEPS.md`
-- `docs/launch/beta-invite-email.md`
-- `docs/launch/tester-feedback-template.md`
-- `BETA_STABLE_STATUS.md`
-
-## 6. 이슈 수집 항목
-
-- PC OS와 브라우저
-- 휴대폰 모델과 OS
-- 같은 Wi-Fi 여부
-- 휴대폰에서 열린 주소
-- 파일 크기와 확장자
-- 전송 방향
-- 오류 문구 또는 스크린샷
-- 재현 순서
-
-## 7. Known limitations
-
-- 공개 계정/로그인 없음
-- 결제 없음
-- 실제 malware scanner는 외부 연결 전
-- native 대용량 background upload는 future work
-- 법무 검토된 privacy/terms는 외부 검토 필요

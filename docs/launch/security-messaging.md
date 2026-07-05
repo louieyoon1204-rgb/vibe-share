@@ -1,28 +1,53 @@
 # Security Messaging
 
-## Safe claims
+## 사용자에게 말할 수 있는 것
 
-- PC does not need a camera.
-- The phone scans the QR shown on the PC screen.
-- The receiver can accept or reject a transfer.
-- Files are stored temporarily for transfer.
-- Production uses PostgreSQL, Redis, and S3-compatible storage.
-- Admin health/status endpoints are separate from user screens.
+- PC에는 카메라가 필요 없습니다.
+- 휴대폰이 PC 화면의 QR을 스캔해 세션에 연결합니다.
+- QR이 어려우면 6자리 코드로 연결할 수 있습니다.
+- 받는 쪽은 파일을 수락하거나 거절할 수 있습니다.
+- 파일 이름, 크기, 상태를 확인할 수 있습니다.
+- 파일은 전송을 위해 임시 저장됩니다.
+- 운영자는 health, 로그, storage 상태를 확인할 수 있습니다.
 
-## Avoid these claims
+## 사용자에게 약속할 수 있는 것
 
-- "완전 안전"
-- "해킹 불가"
-- "모든 파일을 자동으로 악성 검사 완료"
-- "end-to-end encryption"
-- "모든 환경에서 100GB 모바일 background upload 보장"
+- 공개 웹앱 주소에서 시작할 수 있습니다.
+- 받는 쪽 확인 없이 자동 저장하지 않습니다.
+- 세션/전송 만료와 cleanup 정책을 운영합니다.
+- 운영 장애가 나면 health, 로그, R2, DNS 순서로 확인합니다.
 
-## Review-safe beta wording
+## 사용자에게 약속할 수 없는 것
+
+- 완전 안전
+- 해킹 불가
+- 영구 저장
+- 무제한 파일 크기
+- 모든 파일 악성코드 검사 완료
+- end-to-end encryption
+- 네이티브 앱 background upload 완료
+
+## 권장 문구
 
 ```text
-Vibe Share is a beta file transfer app. It pairs a PC web page and a mobile app with a QR code. Receivers can accept or reject files before saving them.
+Vibe Share는 QR로 PC와 휴대폰을 연결해 파일을 주고받는 웹 서비스입니다. 받는 쪽은 파일을 저장하기 전에 수락하거나 거절할 수 있습니다. 파일은 전송을 위해 임시 저장됩니다.
 ```
 
-## Operational note
+## 피해야 할 문구
 
-Before public launch, attach the real malware scanner and finalize retention/deletion policy.
+```text
+절대 안전합니다.
+해킹이 불가능합니다.
+파일을 영구 보관합니다.
+무제한으로 보낼 수 있습니다.
+모든 파일을 자동으로 검사합니다.
+```
+
+## 운영자용 보안 체크
+
+- Railway production secret이 저장소에 들어가지 않았는지 확인
+- R2 access key가 불필요하게 공유되지 않았는지 확인
+- `CORS_ORIGIN=https://app.getvibeshare.com` 유지
+- R2 CORS가 필요한 origin만 허용하는지 확인
+- 오래된 key와 테스트 bucket 정리
+- 사고 발생 시 `docs/launch/incident-report-template.md` 사용

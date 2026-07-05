@@ -1,4 +1,4 @@
-# Mobile Build Handoff
+﻿# Mobile Build Handoff
 
 ## Current State
 
@@ -21,15 +21,15 @@ The repo includes:
 ```text
 development
   Development client build for local debugging.
-  Uses https://api-staging.vibeshare.app as default external API.
+  Uses https://api-staging.getvibeshare.com as default external API.
 
 preview
   Internal beta build for owner/testers.
-  Uses https://api-staging.vibeshare.app.
+  Uses https://api-staging.getvibeshare.com.
 
 production
   Store build for TestFlight / Play internal testing.
-  Uses https://api.vibeshare.app.
+  Uses https://api.getvibeshare.com.
 ```
 
 ## Commands

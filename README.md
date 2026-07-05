@@ -1,205 +1,203 @@
 # Vibe Share
 
-## Beta stable / staging readiness
+Vibe Share는 QR로 PC 웹과 휴대폰 웹을 연결해 파일을 양방향으로 주고받는 web-first 파일 전송 서비스입니다.
 
-2026-04-19 기준으로 iPhone QR 인식, 모바일 웹 자동 연결, PC -> 휴대폰 전송, 휴대폰 -> PC 전송이 로컬 베타 기준에서 확인되었습니다.
+현재 공개 사용 주소는 `https://app.getvibeshare.com`입니다. 일반 사용자는 이 주소만 알면 됩니다. `https://api.getvibeshare.com`은 서버/API 주소이므로 운영 확인용이며, 일반 사용자에게 안내할 필요가 없습니다.
 
-staging 배포를 시작하기 전에는 아래 명령을 통과시킵니다.
+## 현재 운영 상태
 
-```powershell
-cd C:\Users\ycl12\Desktop\vibe-share
-npm.cmd run staging:readiness
+2026-04-19 기준으로 공개 web-first 버전에서 아래 항목이 확인되었습니다.
+
+- `https://app.getvibeshare.com` 접속 가능
+- `https://api.getvibeshare.com/health` 응답 가능
+- `https://api.getvibeshare.com/api/info` 응답 가능
+- QR 연결 가능
+- 6자리 코드 수동 연결 가능
+- PC -> phone 파일 전송 가능
+- phone -> PC 파일 전송 가능
+- 같은 세션에서 양방향 전송 가능
+- 받는 쪽 수락/거절 가능
+- Railway + Postgres + Redis + Cloudflare R2 + Cloudflare Pages/Domain 구성 완료
+
+공개 API의 `health`/`api/info` 확인값은 Postgres, Redis, R2가 active이고 fallback warning이 없습니다. 현재 응답의 `mode`는 `development`로 표시됩니다. 운영 hardening을 더 강하게 적용하려면 Railway에서 `APP_MODE=production` 전환을 별도 점검 항목으로 처리합니다.
+
+## 사용 방법
+
+1. PC에서 `https://app.getvibeshare.com`을 엽니다.
+2. PC 화면에 보이는 QR을 휴대폰 카메라로 스캔합니다.
+3. 휴대폰 브라우저에서 연결되면 보낼지 받을지 선택합니다.
+4. 파일을 선택하고 받는 쪽에서 수락한 뒤 다운로드합니다.
+
+PC에는 카메라가 필요 없습니다. 휴대폰이 PC 화면의 QR을 한 번 스캔하면 같은 전송 세션에서 PC -> phone, phone -> PC가 모두 가능합니다.
+
+## 6자리 코드 fallback
+
+QR 스캔이 어려우면 PC 화면의 6자리 코드를 휴대폰 화면에 입력합니다. 공개 버전은 공개 HTTPS 주소를 기준으로 연결됩니다.
+
+## 운영자가 자주 보는 주소
+
+```text
+사용자 웹앱: https://app.getvibeshare.com
+API health:  https://api.getvibeshare.com/health
+API info:    https://api.getvibeshare.com/api/info
 ```
 
-현재 베타 기준은 `BETA_STABLE_STATUS.md`, staging 배포 절차는 `docs/launch/staging-deploy-checklist.md`를 기준으로 봅니다.
-
-GitHub 업로드 직전에는 `GITHUB_UPLOAD_CHECKLIST.md`를 확인하고 `npm.cmd run github:readiness`를 실행합니다. Railway API 서비스는 repo root를 소스로 두되 `railway.toml`로 `apps/server`만 실행합니다.
-
-## Web-first 베타 사용 안내
-
-1. 기본 흐름은 QR 스캔 -> 연결 -> 전송입니다.
-2. 전송 중 페이지를 벗어나면 연결이 끊길 수 있습니다.
-3. 다시 돌아오면 자동 복구를 시도합니다.
-4. 장시간 background 전송은 future native app track입니다.
-
-휴대폰과 PC는 같은 WiFi 또는 같은 핫스팟에 연결되어 있어야 합니다.
-연결이 실패하면 같은 WiFi인지 먼저 확인하세요.
-아이폰에서 `http://현재_LAN_IP:4000/health`가 열려야 QR 연결도 가능합니다. 안 열리면 네트워크/방화벽 문제를 먼저 해결해야 합니다.
-
-전송 중에는 이 페이지를 닫거나 다른 앱으로 나가지 마세요. 페이지를 벗어나면 연결이 끊길 수 있습니다.
-
-Vibe Share는 PC 웹과 휴대폰을 QR로 먼저 연결한 뒤, 같은 연결 안에서 파일을 양방향으로 주고받는 MVP입니다. PC에는 카메라가 필요 없습니다. 휴대폰이 PC 화면의 QR을 한 번 스캔하면 연결됩니다.
-
-## Safari 일반 모드 연결 팁
-
-- QR 스캔으로 열린 `/j/6자리코드` 주소가 항상 현재 QR 세션보다 우선합니다.
-- iPhone Safari 일반 모드에서 `연결 시도 중`에 머물면 고급 영역의 `연결 정보 초기화`를 누른 뒤 PC의 새 QR을 다시 스캔하세요.
-- 화면 아래의 작은 build/version 값이 바뀌면 예전 연결 상태가 자동으로 초기화될 수 있습니다.
-- 이상하면 예전 Safari 탭을 닫고 PC에서 새 QR을 만든 뒤 다시 스캔하세요.
-
-## 빠른 사용 순서
-
-1. PC 웹 열기
-2. 휴대폰 카메라로 QR 스캔
-3. 연결 후 보낼지 받을지 선택
-4. 파일 전송
-
-## 현재 UX
-
-PC 웹을 열면 파일 선택보다 먼저 큰 QR, 6자리 코드, 연결 상태가 보입니다. 휴대폰이 연결되기 전에는 전송 방향을 고르지 않습니다.
-
-연결 후:
-
-- PC: `휴대폰으로 파일 보내기`, `휴대폰에서 파일 받기`
-- 모바일 웹: `PC로 파일 보내기`, `PC에서 파일 받기`
-
-QR은 `/j/6자리코드` 형태의 짧은 모바일 웹 주소입니다. 기본 흐름에서는 Expo Go QR이나 앱 내부 스캐너를 쓰지 않습니다.
+일반 사용자 안내에는 `https://app.getvibeshare.com`만 사용합니다.
 
 ## 설치
+
+로컬에서 코드를 확인하거나 개발할 때만 필요합니다.
 
 ```powershell
 cd C:\Users\ycl12\Desktop\vibe-share
 npm.cmd install
 ```
 
-## 가장 안정적인 로컬 실행
+## 로컬 개발 실행
 
-Docker Desktop을 켠 뒤 실행합니다.
-
-```powershell
-cd C:\Users\ycl12\Desktop\vibe-share
-powershell -ExecutionPolicy Bypass -File scripts\start-production-like.ps1 -ResetInfra
-```
-
-PC 브라우저에서 엽니다.
-
-```text
-http://localhost:5173
-```
-
-상태 확인:
+서버:
 
 ```powershell
-curl.exe http://localhost:4000/health
-curl.exe http://localhost:4000/admin/status
-curl.exe http://localhost:4000/api/info
-curl.exe http://localhost:5173
-```
-
-아이폰 연결 전 네트워크 진단:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\check-local-network.ps1
-```
-
-## 개발 모드로 따로 실행
-
-PowerShell 창 2개를 엽니다.
-
-창 1:
-
-```powershell
-cd C:\Users\ycl12\Desktop\vibe-share
 npm.cmd run dev:server
 ```
 
-창 2:
+웹:
 
 ```powershell
-cd C:\Users\ycl12\Desktop\vibe-share
 npm.cmd run dev:web
 ```
 
-## iPhone / Android 테스트
-
-1. PC에서 `http://localhost:5173`을 엽니다.
-2. 휴대폰 기본 카메라로 PC 화면의 QR을 스캔합니다.
-3. 휴대폰 브라우저가 `http://PC_LAN_IP:5173/j/123456` 형태로 열리는지 확인합니다.
-4. 연결됨 상태가 보이면 보낼지 받을지 선택합니다.
-
-휴대폰에서 `localhost`를 직접 열면 안 됩니다. 휴대폰의 `localhost`는 PC가 아니라 휴대폰 자기 자신입니다. Vibe Share는 모바일-facing URL에서 `localhost`, `127.0.0.1`, `0.0.0.0`, `::1`을 자동으로 막습니다.
-
-## PC -> 휴대폰
-
-1. PC와 휴대폰을 QR로 연결합니다.
-2. PC에서 `휴대폰으로 파일 보내기`를 누릅니다.
-3. 파일을 선택합니다.
-4. 휴대폰의 같은 페이지에서 파일 받기 모달이 뜨면 `다운로드`를 누릅니다.
-5. Safari/브라우저 다운로드 또는 Files 앱 Downloads 폴더에서 확인합니다.
-
-## 휴대폰 -> PC
-
-1. PC와 휴대폰을 QR로 연결합니다.
-2. 휴대폰에서 `PC로 파일 보내기`를 누릅니다.
-3. 파일을 선택합니다.
-4. PC에서 받기 요청을 수락하고 다운로드합니다.
-
-## 전체 검증
+모바일 Expo 앱:
 
 ```powershell
-cd C:\Users\ycl12\Desktop\vibe-share
-powershell -ExecutionPolicy Bypass -File scripts\run-full-check.ps1
+npm.cmd run dev:mobile
 ```
 
-이 스크립트는 다음을 실행합니다.
+현재 공개 배포의 기본 사용 흐름은 web-first입니다. Expo 앱은 개발/향후 네이티브 앱 검증용으로 남겨둡니다.
 
-- `npm install`
-- `npm test`
-- integration smoke
-- MinIO smoke
-- cleanup
-- web build
-- Expo iOS export
-- Docker infra
-- DB migration
-- API curl checks
-- configured driver smoke
+## 검증 명령
+
+```powershell
+npm.cmd install
+npm.cmd test
+npm.cmd run smoke:integration
+npm.cmd run build -w apps/web
+npm.cmd run ops:public-check
+curl.exe https://api.getvibeshare.com/health
+curl.exe https://api.getvibeshare.com/api/info
+curl.exe https://app.getvibeshare.com
+```
+
+## 운영 체크리스트
+
+- `https://app.getvibeshare.com`이 열린다.
+- `https://api.getvibeshare.com/health`가 정상 응답한다.
+- `https://api.getvibeshare.com/api/info`에서 공개 web/API 주소가 맞다.
+- PC 화면에 QR과 6자리 코드가 보인다.
+- 휴대폰 카메라로 QR을 스캔하면 자동 연결된다.
+- 6자리 코드로도 연결된다.
+- PC -> phone 전송이 된다.
+- phone -> PC 전송이 된다.
+- 작은 파일과 여러 파일 전송이 된다.
+- 받는 쪽에서 수락/거절이 된다.
+- 다운로드 버튼이 명확하게 보인다.
+- 세션 만료 후 새 QR로 다시 연결된다.
+- 연결 실패 시 새 QR로 복구할 수 있다.
+- Railway API 로그, Cloudflare Pages 배포 상태, R2 CORS/업로드 상태를 확인할 수 있다.
+
+## 장애 시 먼저 볼 순서
+
+1. `https://api.getvibeshare.com/health`
+2. `https://api.getvibeshare.com/api/info`
+3. `https://app.getvibeshare.com`
+4. Railway API 로그
+5. PC 브라우저 `F12` Network/Console
+6. Cloudflare Pages 최근 배포 상태
+7. Cloudflare R2 bucket, CORS, access key
+8. Cloudflare DNS 레코드
+
+상세 절차는 `docs/ops-runbook.md`에 정리되어 있습니다.
 
 ## 주요 환경 변수
 
-로컬 기본 실행은 `.env` 없이도 동작합니다. production-like 또는 staging에서는 `.env.production-like.example`, `.env.staging.example`, `.env.example`을 기준으로 값을 넣습니다.
+운영 값은 배포 플랫폼의 secret/environment 설정에 보관합니다. 실제 secret은 저장소에 넣지 않습니다. 아래는 권장 운영 hardening 값입니다.
 
-- `PORT`: API server port, default `4000`
-- `WEB_DEV_PORT`: web dev port, default `5173`
-- `VITE_SERVER_URL`: web app API URL
-- `PUBLIC_WEB_APP_URL`: public web app URL
-- `PUBLIC_API_URL`: public API URL
-- `DATABASE_URL`: PostgreSQL URL
-- `REDIS_URL`: Redis URL
-- `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`: S3-compatible storage. Cloudflare R2 uses `S3_ENDPOINT=https://YOUR_ACCOUNT_ID.r2.cloudflarestorage.com`, `S3_REGION=auto`, `S3_FORCE_PATH_STYLE=false`.
-- `DEVICE_TRUST_SECRET`, `ADMIN_TOKEN`, `AUTH_JWT_SECRET`: staging/production secrets
+- `APP_MODE=production` 권장. 현재 공개 API 응답은 `mode=development`로 확인됨.
+- `PORT` 또는 `SERVER_PORT`
+- `CORS_ORIGIN=https://app.getvibeshare.com`
+- `PUBLIC_WEB_APP_URL=https://app.getvibeshare.com`
+- `PUBLIC_API_URL=https://api.getvibeshare.com`
+- `DATABASE_DRIVER=postgres`
+- `DATABASE_URL`
+- `CACHE_DRIVER=redis`
+- `REDIS_URL`
+- `SOCKET_IO_ADAPTER=redis`
+- `STORAGE_DRIVER=s3`
+- `S3_ENDPOINT`
+- `S3_REGION=auto`
+- `S3_BUCKET`
+- `S3_ACCESS_KEY_ID`
+- `S3_SECRET_ACCESS_KEY`
+- `S3_FORCE_PATH_STYLE=false`
+- `DEVICE_TRUST_SECRET`
+- `ADMIN_TOKEN`
+- `AUTH_JWT_SECRET`
+
+## 기본 제한
+
+- 세션 만료 기본값: 30분
+- 전송 만료 기본값: 1시간
+- cleanup 주기 기본값: 60초
+- 일반 최대 파일 크기 기본값: `MAX_FILE_SIZE_GB=100`
+- legacy relay 최대 파일 크기 기본값: `LEGACY_RELAY_MAX_FILE_SIZE_MB=100`
+- 업로드 청크 기본값: 16MB
+- 단일 청크 최대 기본값: 64MB
+- signed URL TTL 기본값: 900초
+- 허용 MIME 타입은 기본적으로 제한하지 않음
+
+운영 비용, 브라우저 제한, R2 정책에 따라 실제 권장 파일 크기는 더 작게 운영할 수 있습니다.
+
+## 삭제/정리 대상
+
+운영에 연결되지 않은 이전 테스트 프로젝트, 실패한 Workers/Pages 시도, 예전 도메인 연결, 로컬 테스트 스크린샷, `.tmp` 임시 파일, 오래된 환경 변수는 정리 대상입니다.
+
+삭제하면 안 되는 항목:
+
+- `app.getvibeshare.com`
+- `api.getvibeshare.com`
+- 현재 Railway API 프로젝트
+- 현재 Railway Postgres/Redis
+- 현재 Cloudflare Pages 프로젝트
+- 현재 Cloudflare R2 bucket
+- 현재 Cloudflare DNS 레코드
+
+자세한 구분은 `docs/ops-cleanup.md`와 `OWNER_ONLY_FINAL_STEPS.md`를 봅니다.
 
 ## 폴더 구조
 
 ```text
-apps/server      Express + Socket.IO API/relay server
-apps/web         PC web and mobile web join UI
-apps/mobile      Expo app for EAS/TestFlight/Play internal testing
+apps/server      Express + Socket.IO relay/API server
+apps/web         공개 web-first PC/mobile UI
+apps/mobile      Expo managed app, 개발/향후 네이티브 트랙
 packages/shared  shared transfer states and URL utilities
-docs/            deployment, launch, and handoff docs
-scripts/         restart, verification, and deliverable scripts
+docs             운영, 런치, 지원 문서
+scripts          smoke, build, readiness helper scripts
+deliverables     final-release-ready handoff package
 ```
 
-## 배포 준비 문서
+## 홍보만 남음 판정
 
-```text
-START_HERE_FIRST.md
-LAUNCH_STATUS.md
-OWNER_ONLY_FINAL_STEPS.md
-docs/deployment.md
-docs/launch/staging-handoff.md
-docs/launch/staging-deploy-checklist.md
-docs/launch/railway-api-service.md
-docs/launch/mobile-build-handoff.md
-docs/launch/store-submission-checklist.md
-BETA_STABLE_STATUS.md
-GITHUB_UPLOAD_CHECKLIST.md
-```
+아래 조건이 모두 충족되면 "홍보만 남음"으로 판단합니다.
 
-## 현재 한계
+- 공개 주소 접속 가능
+- QR 연결 가능
+- 양방향 파일 전송 가능
+- 운영 로그/헬스체크 확인 가능
+- 사용자 안내 문서 있음
+- FAQ 있음
+- 베타 초대 문구 있음
+- 지원 템플릿 있음
+- 운영 체크리스트 있음
+- 홍보 자료 있음
 
-- 공개 계정/로그인은 아직 없습니다.
-- 결제는 아직 없습니다.
-- 실제 malware scanner는 외부 서비스 연결 전입니다.
-- 대용량 native background upload는 store beta 이후 과제입니다.
-- Privacy/Terms는 외부 법무 검토가 필요합니다.
+현재 이 저장소는 공개 web-first 배포와 운영/지원/홍보 직전 문서 정리를 마친 상태를 목표로 합니다. 남은 외부 활동은 홍보, 유입, 사용자 반응 수집입니다.

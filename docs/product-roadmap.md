@@ -1,4 +1,4 @@
-# Product Roadmap
+﻿# Product Roadmap
 
 ## Done
 
@@ -24,25 +24,24 @@
 - Production-like local mode is verified against Docker compose PostgreSQL/Redis/MinIO when Docker Engine is running.
 - Integration smoke covers pairing, device trust enforcement, relay transfer, and resumable transfer in both directions.
 - i18n structure exists and is partially translated.
-- Product surface is defined: `vibeshare.app` official site, `app.vibeshare.app` web app, `api.vibeshare.app` API, mobile app name `Vibe Share`.
+- Product surface is defined: `getvibeshare.com` official site, `app.getvibeshare.com` web app, `api.getvibeshare.com` API, mobile app name `Vibe Share`.
 - Web title/meta, mobile app config, server root copy, README, and launch docs now use product-facing Vibe Share language.
 - Launch asset drafts exist under `docs/launch` for positioning, landing page, stores, pricing, beta plan, security messaging, support FAQ, and release checklist.
 - Beta invite email, tester feedback template, support intake template, incident report template, store submission checklist, privacy/policy outline, site map, and static landing prototype are prepared.
 - Codex-first operating structure exists with `.codex/actions.json`, `.codex/setup.ps1`, root owner docs, and one-command PowerShell scripts.
 
-## Private beta usable
+## Public web-first usable
 
-For trusted testers, the current repo is suitable for private beta of the core local flow:
+For real users, the current public web-first flow is usable at `https://app.getvibeshare.com`:
 
-- PC web plus Expo Go mobile app.
-- Same Wi-Fi/LAN testing.
+- PC web plus mobile web.
 - QR/manual pairing.
 - Bidirectional transfer with receiver accept/reject.
-- PC web resumable upload and same-file resume after refresh.
-- Production-like local infrastructure validation.
-- Trusted tester copy, support intake fields, and private beta checklist.
+- Public API at `https://api.getvibeshare.com`.
+- Railway Postgres/Redis and Cloudflare R2 in the production path.
+- Operator runbook, support FAQ, tester template, and promo-ready copy exist.
 
-Use the beta with clear caveats: no public account system, no production abuse desk, no real scanner, and no native mobile background large-file upload.
+Use the beta with clear caveats: no public account system, no billing, no real scanner guarantee, and no native mobile background large-file upload.
 
 ## Next: mobile commercial upload
 
@@ -62,8 +61,8 @@ Next steps:
 ## Next: account and trust
 
 - Real signup/login.
-- Official site hosting and DNS for `vibeshare.app`.
-- Production hosting and TLS for `app.vibeshare.app` and `api.vibeshare.app`.
+- Optional official marketing site at `getvibeshare.com`.
+- Production hosting and TLS are already live for `app.getvibeshare.com` and `api.getvibeshare.com`.
 - App Store/TestFlight and Play Store release builds.
 - Verified identity, passwordless/email/SSO, and token refresh/revocation.
 - Fine-grained authorization tests for every transfer/upload/download path.

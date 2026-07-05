@@ -1,8 +1,8 @@
-# Data Model
+﻿# Data Model
 
 The durable production-oriented schema is in `apps/server/migrations/001_init.sql`. Local demo mode uses the same collection names in `.tmp/metadata.json` but is not transactional.
 
-This model belongs to the API service surface planned as `https://api.vibeshare.app`. The web app and mobile app should treat these records as server-owned metadata, not client-owned storage.
+This model belongs to the API service surface planned as `https://api.getvibeshare.com`. The web app and mobile app should treat these records as server-owned metadata, not client-owned storage.
 
 Product copy must not imply long-term storage guarantees yet. Private beta metadata supports session pairing, transfer state, upload resume, audit hooks, and cleanup. Paid public launch still needs explicit retention/deletion policy, account ownership rules, and admin audit search.
 

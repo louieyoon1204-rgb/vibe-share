@@ -1,4 +1,4 @@
-# Staging Handoff
+﻿# Staging Handoff
 
 ## Beta Stable Gate
 
@@ -17,9 +17,9 @@ Railway API service details are in `docs/launch/railway-api-service.md`. Use the
 ## Staging URLs
 
 ```text
-https://staging.vibeshare.app
-https://app-staging.vibeshare.app
-https://api-staging.vibeshare.app
+https://staging.getvibeshare.com
+https://app-staging.getvibeshare.com
+https://api-staging.getvibeshare.com
 ```
 
 ## Required Services
@@ -35,9 +35,9 @@ https://api-staging.vibeshare.app
 ## Required DNS
 
 ```text
-staging.vibeshare.app      CNAME/ALIAS  <site-host-target>
-app-staging.vibeshare.app  CNAME/ALIAS  <web-host-target>
-api-staging.vibeshare.app  CNAME/ALIAS  <api-host-target>
+staging.getvibeshare.com      CNAME/ALIAS  <site-host-target>
+app-staging.getvibeshare.com  CNAME/ALIAS  <web-host-target>
+api-staging.getvibeshare.com  CNAME/ALIAS  <api-host-target>
 ```
 
 ## Required Secrets
@@ -66,7 +66,7 @@ For Cloudflare R2, `S3_ENDPOINT` is the account S3 API endpoint: `https://YOUR_A
 1. Create DB/cache/storage.
 2. Deploy API with staging secrets.
 3. Run DB migration.
-4. Deploy web app with `VITE_SERVER_URL=https://api-staging.vibeshare.app`.
+4. Deploy web app with `VITE_SERVER_URL=https://api-staging.getvibeshare.com`.
 5. Confirm HTTPS, CORS, and `/api/info`.
 6. Run QR join and code join tests.
 7. Run PC -> phone and phone -> PC transfer tests.
@@ -75,9 +75,9 @@ For Cloudflare R2, `S3_ENDPOINT` is the account S3 API endpoint: `https://YOUR_A
 ## Verify Staging
 
 ```powershell
-curl.exe https://api-staging.vibeshare.app/health
-curl.exe https://api-staging.vibeshare.app/api/info
-curl.exe https://api-staging.vibeshare.app/admin/status -H "Authorization: Bearer <ADMIN_TOKEN>"
+curl.exe https://api-staging.getvibeshare.com/health
+curl.exe https://api-staging.getvibeshare.com/api/info
+curl.exe https://api-staging.getvibeshare.com/admin/status -H "Authorization: Bearer <ADMIN_TOKEN>"
 ```
 
 Expected:
@@ -87,13 +87,13 @@ Expected:
 - realtime active: `redis`
 - storage active: `s3`
 - fallback warnings: empty
-- `mobileServerUrl` is `https://api-staging.vibeshare.app`
-- `mobileWebUrl` is `https://app-staging.vibeshare.app`
+- `mobileServerUrl` is `https://api-staging.getvibeshare.com`
+- `mobileWebUrl` is `https://app-staging.getvibeshare.com`
 - no mobile-facing URL contains `localhost`, `127.*`, `0.0.0.0`, or `::1`
 
 ## Tester Flow
 
-1. Open `https://app-staging.vibeshare.app` on PC.
+1. Open `https://app-staging.getvibeshare.com` on PC.
 2. Scan QR with phone camera.
 3. Confirm connected state.
 4. Choose send or receive.

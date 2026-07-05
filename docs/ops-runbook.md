@@ -1,277 +1,189 @@
 # Ops Runbook
 
-## Codex-first operations
+Vibe Share 공개 web-first 운영 중 장애가 났을 때 보는 순서입니다.
 
-For a non-developer owner, start with the root files:
+## 서비스 지도
 
-- `START_HERE_FIRST.md`
-- `BETA_OPERATOR_CHECKLIST.md`
-- `IPHONE_TEST_STEPS.md`
-- `LAUNCH_STATUS.md`
-- `OWNER_ONLY_FINAL_STEPS.md`
-
-Codex actions are defined in `.codex/actions.json`. The same actions can be run directly:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\start-demo.ps1
-powershell -ExecutionPolicy Bypass -File scripts\start-production-like.ps1
-powershell -ExecutionPolicy Bypass -File scripts\run-full-check.ps1
-powershell -ExecutionPolicy Bypass -File scripts\build-launch-pack.ps1
-powershell -ExecutionPolicy Bypass -File scripts\open-ops-summary.ps1
+```text
+사용자 웹앱: https://app.getvibeshare.com
+API 서버:    https://api.getvibeshare.com
 ```
 
-## Service map
+일반 사용자에게는 사용자 웹앱 주소만 안내합니다. API 주소는 운영자 확인용입니다.
 
-- Official site `vibeshare.app`: product, beta, FAQ, and support copy. In this repo the launch copy lives under `docs/launch`; DNS/hosting is not configured.
-- Web app `app.vibeshare.app`: implemented by `apps/web`. This is the PC user surface for session creation, QR/manual pairing, and PC-side transfer actions.
-- API `api.vibeshare.app`: implemented by `apps/server`. This is the API/relay/status/auth foundation/metadata server. The root path is a status/connection guide; `/admin/*` is for operators.
-- Mobile app `Vibe Share`: implemented by `apps/mobile`. Current private beta runs in Expo Go; store builds are launch work.
+현재 운영 인프라:
 
-When supporting a tester, first identify which surface they are looking at. Many local setup errors come from opening API or localhost pages in Safari instead of opening Expo Go and scanning the in-app Vibe Share session QR.
+- Cloudflare Domain/DNS
+- Cloudflare Pages for web app
+- Railway API service
+- Railway Postgres
+- Railway Redis
+- Cloudflare R2 object storage
 
-Use `docs/launch/support-intake-template.md` for support tickets, `docs/launch/tester-feedback-template.md` for beta feedback, and `docs/launch/incident-report-template.md` for operational or security incidents.
+## 장애 대응 순서
 
-## Local demo health check
+1. `https://api.getvibeshare.com/health`를 연다.
+2. `https://api.getvibeshare.com/api/info`를 연다.
+3. `https://app.getvibeshare.com`을 연다.
+4. Railway API 로그를 본다.
+5. PC 브라우저에서 `F12`를 열고 Network/Console을 본다.
+6. Cloudflare Pages 최근 배포 상태를 본다.
+7. R2 CORS, bucket, access key를 본다.
+8. Cloudflare DNS 레코드를 본다.
 
-```powershell
-cd C:\Users\ycl12\Desktop\vibe-share
-npm.cmd install
-npm.cmd run dev:server
-curl.exe http://localhost:4000/health
-curl.exe http://localhost:4000/admin/health
-curl.exe http://localhost:4000/admin/status
-```
-
-Expected:
-
-- `ok: true`
-- `activeDrivers.storage.active` matches the intended mode
-- demo mode: database `json`, cache `memory`, storage `local`
-- production-like local mode: database `postgres`, cache `redis`, realtime `redis`, storage `s3`
-- `fallbackWarnings: []` when no fallback is active
-
-## iPhone localhost rule
-
-If an iPhone user opens `http://localhost:5173` or `http://localhost:4000` in Safari, it will not reach the PC. On iPhone, `localhost` means the iPhone itself, not the Windows PC.
-
-Use this exact beginner flow:
-
-1. Start the server on the PC: `npm.cmd run dev:server`
-2. Start the PC web UI: `npm.cmd run dev:web`
-3. Open the PC web UI on the PC: `http://localhost:5173`
-4. Start Expo: `npm.cmd run dev:mobile`
-5. On iPhone, open Expo Go and scan the Expo QR from the terminal.
-6. In the PC web UI, create a new session.
-7. Inside the Vibe Share app, tap QR scan and scan the Vibe Share session QR shown on the PC web page.
-
-Address meanings:
-
-- PC web on the PC: `http://localhost:5173`
-- Phone Safari web check: `http://<PC_LAN_IP>:5173`
-- PC API on the PC: `http://localhost:4000`
-- Mobile app pairing server: `http://<PC_LAN_IP>:4000`
-
-The server root page at `http://<PC_LAN_IP>:4000` is only an API/relay/status guide. If that page opens in Safari, the network path is reachable, but file transfer still happens inside Expo Go.
-
-## Production-like local startup
-
-Preflight:
+## 1. API health
 
 ```powershell
-docker desktop status
-docker info
-docker compose version
+curl.exe https://api.getvibeshare.com/health
 ```
 
-If Docker is stopped or `docker info` returns a Docker Engine 500 error, run the repair script from an elevated PowerShell:
+정상 기대값:
+
+- HTTP 200
+- `ok` 또는 정상 상태를 나타내는 응답
+- 응답이 너무 오래 걸리지 않음
+
+실패하면 먼저 Railway API 서비스 상태와 로그를 봅니다.
+
+## 2. API info
 
 ```powershell
-cd C:\Users\ycl12\Desktop\vibe-share
-Set-ExecutionPolicy -Scope Process Bypass -Force
-.\scripts\repair-wsl-docker.ps1
+curl.exe https://api.getvibeshare.com/api/info
 ```
 
-If the script exits with `3010` or says a reboot is pending, reboot Windows and rerun the same elevated command once. This script enables WSL/Virtual Machine Platform, verifies the modern WSL package, starts Docker Desktop Service, and waits for Docker Engine readiness.
+확인할 것:
 
-Observed minimal recovery path on this machine:
+- public API URL이 `https://api.getvibeshare.com`인지
+- public web URL이 `https://app.getvibeshare.com`인지
+- 모바일 연결 URL이 localhost나 private LAN 주소가 아닌지
+
+## 3. Web app
 
 ```powershell
-docker desktop start
-docker desktop status
-docker info
+curl.exe https://app.getvibeshare.com
 ```
 
-If `docker desktop status` stays `starting` and `Start-Service com.docker.service` says `Cannot open service`, switch to an elevated PowerShell and run `.\scripts\repair-wsl-docker.ps1`. That is the smallest remaining user action because starting Docker Desktop Service requires UAC/admin rights.
+브라우저에서도 직접 확인합니다.
 
-```powershell
-cd C:\Users\ycl12\Desktop\vibe-share
-Copy-Item .env.production-like.example .env
-docker compose -f docker-compose.local-infra.yml up -d
-docker compose -f docker-compose.local-infra.yml ps
-npm.cmd run db:migrate
-npm.cmd run dev:server
+확인할 것:
+
+- 화면이 흰 화면이 아닌지
+- QR과 6자리 코드가 보이는지
+- 휴대폰 QR 스캔 후 `/j/6자리코드` 화면이 열리는지
+- Console에 API 연결 오류가 없는지
+
+## 4. Railway API 로그
+
+먼저 볼 로그:
+
+- 서버 시작 로그
+- config validation 경고/오류
+- Postgres 연결 오류
+- Redis 연결 오류
+- R2/S3 업로드 오류
+- Socket.IO 연결/해제 로그
+- 4xx/5xx 요청 로그
+
+자주 보는 원인:
+
+- 환경 변수 누락
+- `CORS_ORIGIN` 불일치
+- Redis 연결 실패
+- Postgres 연결 실패
+- R2 access key 만료 또는 권한 오류
+- R2 CORS 오류
+
+## 5. 브라우저 F12
+
+PC에서 `https://app.getvibeshare.com`을 연 뒤 `F12`를 누릅니다.
+
+Network:
+
+- `/api/sessions`
+- `/api/info`
+- Socket.IO 요청
+- upload/download 요청
+
+Console:
+
+- CORS 오류
+- WebSocket 오류
+- fetch 실패
+- 런타임 오류
+
+## 6. Cloudflare Pages
+
+확인할 것:
+
+- 최근 배포가 성공 상태인지
+- 커스텀 도메인 `app.getvibeshare.com`이 연결되어 있는지
+- 빌드 환경 변수 `VITE_SERVER_URL=https://api.getvibeshare.com`이 맞는지
+- 이전 실패 배포가 활성화되지 않았는지
+
+## 7. Cloudflare R2
+
+확인할 것:
+
+- bucket이 존재하는지
+- R2 S3 API key가 살아 있는지
+- API 서비스 환경 변수와 key가 일치하는지
+- CORS가 web app origin을 허용하는지
+- 업로드 객체가 생성되는지
+- 만료/cleanup 정책이 과도하게 빨리 삭제하지 않는지
+
+운영 기본값:
+
+```text
+S3_REGION=auto
+S3_FORCE_PATH_STYLE=false
 ```
 
-Expected:
+## 8. DNS
 
-- PostgreSQL on `127.0.0.1:5432`
-- Redis on `127.0.0.1:6379`
-- MinIO API on `127.0.0.1:9000`
-- MinIO console on `127.0.0.1:9001`
-- Socket.IO adapter reports `redis`
+확인할 것:
 
-If `docker desktop status` reports `stopped` after the repair script and reboot, open Docker Desktop once and finish any visible onboarding prompt. If `Start-Service com.docker.service` fails with "Cannot open service", the current PowerShell is not elevated.
+- `app.getvibeshare.com`이 Cloudflare Pages로 연결됨
+- `api.getvibeshare.com`이 Railway API로 연결됨
+- TLS 인증서가 정상
+- 예전 테스트 레코드가 현재 운영 레코드를 덮지 않음
 
-Production-like verification:
+## 사용자 문의 1차 답변
 
-```powershell
-$env:INTEGRATION_USE_CONFIG_DRIVERS='true'
-npm.cmd run smoke:integration
-Remove-Item Env:\INTEGRATION_USE_CONFIG_DRIVERS
-npm.cmd run smoke:minio
-curl.exe http://localhost:4000/admin/status
-```
+### QR이 안 됩니다
 
-Check `configuredDrivers`, `activeDrivers`, and `fallbackWarnings`. If the server was started before Docker/Redis/Postgres were healthy, restart `npm.cmd run dev:server` so it reconnects to the real drivers instead of development fallback.
+PC에서 새 QR을 만든 뒤 휴대폰 기본 카메라로 다시 스캔해 주세요. QR이 계속 안 되면 6자리 코드를 입력해 주세요.
 
-## Docker/WSL diagnosis checklist
+### 연결됐는데 파일이 안 옵니다
 
-Run:
+받는 쪽에서 수락해야 다운로드가 시작됩니다. 화면에 뜬 파일 이름과 크기를 확인한 뒤 수락해 주세요.
 
-```powershell
-"C:\Program Files\WSL\wsl.exe" --version
-"C:\Program Files\WSL\wsl.exe" --status
-Get-CimInstance Win32_OptionalFeature | Where-Object { $_.Name -in @("Microsoft-Windows-Subsystem-Linux","VirtualMachinePlatform") } | Select-Object Name,InstallState
-Get-Service com.docker.service,LxssManager,vmcompute,hns -ErrorAction SilentlyContinue
-```
+### 다운로드 위치를 모르겠습니다
 
-Typical meanings:
+iPhone은 Safari 다운로드 또는 파일 앱 Downloads 폴더를 확인해 주세요. PC는 브라우저의 기본 다운로드 폴더를 확인해 주세요.
 
-- `WSL_E_WSL_OPTIONAL_COMPONENT_REQUIRED`: WSL app is installed, but Windows optional component activation has not completed. Run the repair script as administrator and reboot if requested.
-- `docker desktop status` = `stopped`: Docker Desktop UI may be open, but the backend engine is not running.
-- `docker info` Engine 500: Docker CLI exists, but the backend pipe is not serving the Engine API.
-- `com.docker.service` stopped + non-elevated PowerShell: service start needs administrator/UAC.
+### 서버 주소가 뭔가요
 
-## Admin health
+일반 사용자는 서버 주소를 알 필요가 없습니다. `https://app.getvibeshare.com`만 열면 됩니다.
 
-Development:
+## 운영 점검 주기
 
-```powershell
-curl.exe http://localhost:4000/admin/status
-```
+매일:
 
-Production:
+- health 확인
+- web app 접속 확인
+- Railway 오류 로그 확인
+- R2 사용량/오류 확인
 
-```powershell
-curl.exe -H "Authorization: Bearer <ADMIN_TOKEN>" http://localhost:4000/admin/status
-```
+홍보 게시 직전:
 
-Check:
+- QR 연결
+- 6자리 코드
+- PC -> phone
+- phone -> PC
+- 수락/거절
+- 다운로드
 
-- config validation errors
-- configured vs active driver mismatch
-- fallback warnings
-- database availability
-- cache availability
-- realtime adapter availability
-- storage driver availability
-- runtime sessions/transfers/uploadSessions counts
-- file/chunk/signed URL limits
+장애 후:
 
-## Migration
-
-```powershell
-npm.cmd run db:migrate
-```
-
-If `DATABASE_DRIVER` is not `postgres`, migration exits successfully with a skip message. That is intentional for local demo mode.
-
-## Redis fallback behavior
-
-In development, if `CACHE_DRIVER=redis` but Redis cannot be reached, the server logs a warning and uses memory cache fallback. In production, Redis connection failure blocks startup.
-
-When `SOCKET_IO_ADAPTER=redis`, Socket.IO room fanout also uses Redis. This removes the requirement that both paired devices are connected to the same Node.js process for transfer events. A WebSocket-aware load balancer or sticky sessions may still be useful for upgrade stability and reconnect behavior.
-
-## PostgreSQL fallback behavior
-
-In development, if `DATABASE_DRIVER=postgres` but PostgreSQL cannot be reached, the server logs a warning and uses JSON metadata fallback. In production, PostgreSQL connection failure blocks startup.
-
-## MinIO multipart smoke
-
-```powershell
-npm.cmd run smoke:minio
-```
-
-This verifies:
-
-- MinIO startup
-- bucket creation
-- presigned multipart part upload
-- multipart complete
-- signed download
-- abort incomplete multipart upload
-
-This smoke test can run without Docker because it downloads a local MinIO Windows binary under `.tmp/minio-smoke/tools`.
-
-## Cleanup command
-
-```powershell
-npm.cmd run cleanup
-```
-
-This marks expired sessions/transfers, aborts stale upload sessions through the configured storage adapter when possible, and removes old local demo artifacts. It is a runnable command, not a distributed scheduler. In real production it should be called by a scheduled worker or job runner with idempotency and alerting.
-
-## Private beta readiness checklist
-
-Run before inviting testers:
-
-```powershell
-npm.cmd install
-npm.cmd test
-npm.cmd run smoke:minio
-npm.cmd run cleanup
-npm.cmd run build -w apps/web
-npm.cmd exec -w apps/mobile -- expo export --platform ios --output-dir ../../.tmp/expo-export-ios
-curl.exe http://localhost:4000/
-curl.exe http://localhost:4000/health
-curl.exe http://localhost:4000/admin/health
-curl.exe http://localhost:4000/admin/status
-```
-
-Pass criteria:
-
-- Pairing works by QR and manual 6-digit code.
-- PC -> mobile and mobile -> PC both pass with accept/reject visible.
-- Device trust negative checks pass in `smoke:integration`.
-- `fallbackWarnings` is empty for production-like mode.
-- iPhone flow copy says Expo Go first, then app-internal Vibe Share QR scan.
-
-## Beta support intake
-
-Collect these fields for every tester issue:
-
-- Device model and OS version
-- Browser and browser version
-- Expo Go version
-- PC and phone Wi-Fi/network details
-- File extension and size
-- Direction: PC -> phone or phone -> PC
-- Pairing method: QR scan or 6-digit code
-- Exact screen: official site, web app, API status page, Expo Go, or Vibe Share app
-- Exact error message or screenshot
-- Reproduction steps
-
-## Cleanup tasks before paid production
-
-- Add object storage lifecycle rule for aborted incomplete multipart uploads.
-- Add scheduled worker for expired transfers and orphaned upload sessions.
-- Add audit export/retention job.
-- Add malware scan result worker and quarantine cleanup.
-- Add metrics and alerting for upload failures, S3 errors, Redis errors, and Postgres errors.
-
-## Incident response notes
-
-- Use `audit_logs` to trace session/transfer/device events.
-- Use `devices.trust_token_hash` to attach future device block/revocation.
-- Use `storage_key` from `transfers` and `upload_sessions` to locate object storage data.
-- Preserve audit logs even when file objects expire, subject to legal retention policy.
+- `docs/launch/incident-report-template.md`로 기록
+- 같은 문의가 반복되면 `docs/launch/support-faq.md` 갱신

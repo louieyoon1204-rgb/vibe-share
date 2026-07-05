@@ -1,133 +1,92 @@
 # START HERE FIRST
 
-## Beta stable / staging readiness
+Vibe Share 운영자가 가장 먼저 볼 문서입니다.
 
-2026-04-19 기준으로 QR 스캔, 자동 연결, PC -> 휴대폰 전송, 휴대폰 -> PC 전송까지 로컬 베타 기준 확인이 끝났습니다.
+## 지금 사용 가능한 주소
 
-staging으로 넘기기 전에는 아래 한 줄을 실행합니다.
-
-```powershell
-npm.cmd run staging:readiness
+```text
+사용자 주소: https://app.getvibeshare.com
+API 주소:    https://api.getvibeshare.com
 ```
 
-상태 기준은 `BETA_STABLE_STATUS.md`, staging 작업 순서는 `docs/launch/staging-deploy-checklist.md`입니다.
+일반 사용자에게는 `https://app.getvibeshare.com`만 안내합니다. `https://api.getvibeshare.com`은 운영 확인용입니다.
 
-GitHub에 올리기 전에는 `GITHUB_UPLOAD_CHECKLIST.md`를 보고 `npm.cmd run github:readiness`를 실행합니다. Railway API 서비스는 repo root에서 만들고 `railway.toml`이 `apps/server`만 시작하게 둡니다.
+## 현재 기본 버전
 
-## Web-first 베타 사용 안내
+현재 기본은 web-first 공개 버전입니다.
 
-1. 기본 흐름은 QR 스캔 -> 연결 -> 전송입니다.
-2. 전송 중 페이지를 벗어나면 연결이 끊길 수 있습니다.
-3. 다시 돌아오면 자동 복구를 시도합니다.
-4. 장시간 background 전송은 future native app track입니다.
+- PC는 웹앱을 엽니다.
+- 휴대폰은 PC 화면의 QR을 스캔합니다.
+- 휴대폰 브라우저가 연결 화면을 엽니다.
+- 연결 후 PC -> phone, phone -> PC를 같은 세션에서 선택합니다.
+- PC에는 카메라가 필요 없습니다.
 
-휴대폰과 PC는 같은 WiFi 또는 같은 핫스팟에 연결되어 있어야 합니다.
-연결이 실패하면 같은 WiFi인지 먼저 확인하세요.
-아이폰에서 `http://현재_LAN_IP:4000/health`가 열려야 QR 연결도 가능합니다. 안 열리면 네트워크/방화벽 문제를 먼저 해결해야 합니다.
+공개 버전 사용자 안내는 공개 HTTPS 주소 기준으로만 작성합니다.
 
-전송 중에는 이 페이지를 닫거나 다른 앱으로 나가지 마세요. 페이지를 벗어나면 연결이 끊길 수 있습니다.
+## 오늘 확인할 것
 
-Vibe Share는 PC 웹과 휴대폰을 QR로 먼저 연결한 뒤, 같은 연결 안에서 파일을 양방향으로 주고받는 web-first 전송 앱입니다. PC에는 카메라가 필요 없습니다.
+1. PC에서 `https://app.getvibeshare.com`을 엽니다.
+2. QR과 6자리 코드가 보이는지 확인합니다.
+3. 휴대폰 카메라로 QR을 스캔합니다.
+4. 자동 연결되는지 확인합니다.
+5. 6자리 코드 fallback도 확인합니다.
+6. PC -> phone 작은 파일 전송을 확인합니다.
+7. phone -> PC 작은 파일 전송을 확인합니다.
+8. 받는 쪽 수락/거절을 각각 확인합니다.
+9. 다운로드 버튼이 보이는지 확인합니다.
+10. `https://api.getvibeshare.com/health`와 `/api/info`를 확인합니다.
 
-## iPhone Safari 일반 모드 팁
+## 운영자가 읽을 순서
 
-- QR 스캔으로 열린 `/j/6자리코드`는 저장된 예전 연결보다 항상 우선합니다.
-- `연결 시도 중`에 오래 머물면 `연결 정보 초기화`를 누르고, 예전 Safari 탭을 닫은 뒤 새 QR을 다시 스캔합니다.
-- 화면 아래 build/version이 바뀌면 이전 build에서 저장된 상태가 자동 초기화될 수 있습니다.
+1. `LAUNCH_STATUS.md`
+2. `BETA_OPERATOR_CHECKLIST.md`
+3. `docs/ops-runbook.md`
+4. `docs/ops-cleanup.md`
+5. `docs/launch/support-faq.md`
+6. `deliverables/final-release-ready/OWNER_HANDOFF.md`
 
-## 사용자 흐름
-
-1. PC 웹 열기
-2. 휴대폰 카메라로 QR 스캔
-3. 연결 후 보낼지 받을지 선택
-4. 파일 전송
-
-## 지금 repo 상태
-
-완료된 내부 작업:
-
-- PC 웹은 큰 QR, 6자리 코드, 연결 상태를 먼저 보여줍니다.
-- QR은 `/j/6자리코드` 형태의 짧은 모바일 웹 URL입니다.
-- 휴대폰은 QR 또는 6자리 코드로 연결됩니다.
-- 연결 전에는 파일 선택을 앞에 두지 않습니다.
-- 연결 후 PC에는 `휴대폰으로 파일 보내기`, `휴대폰에서 파일 받기`가 보입니다.
-- 연결 후 모바일 웹에는 `PC로 파일 보내기`, `PC에서 파일 받기`가 보입니다.
-- PC -> 휴대폰, 휴대폰 -> PC 전송이 모두 동작합니다.
-- 모바일-facing URL에서 `localhost`, `127.0.0.1`, `0.0.0.0`, `::1`을 차단합니다.
-- production-like local mode는 PostgreSQL, Redis, MinIO(S3-compatible)를 사용합니다.
-- TestFlight / Google Play internal testing용 EAS profiles와 문서가 준비되어 있습니다.
-
-외부에서만 할 일은 `OWNER_ONLY_FINAL_STEPS.md`에만 남겼습니다.
-
-## 가장 빠른 로컬 실행
+## 가장 많이 쓰는 명령
 
 ```powershell
 cd C:\Users\ycl12\Desktop\vibe-share
 npm.cmd install
-powershell -ExecutionPolicy Bypass -File scripts\start-production-like.ps1 -ResetInfra
+npm.cmd test
+npm.cmd run smoke:integration
+npm.cmd run build -w apps/web
 ```
 
-PC에서 여는 주소:
-
-```text
-http://localhost:5173
-```
-
-상태 확인:
+공개 배포 확인:
 
 ```powershell
-curl.exe http://localhost:4000/health
-curl.exe http://localhost:4000/admin/status
-curl.exe http://localhost:4000/api/info
-curl.exe http://localhost:5173
+curl.exe https://api.getvibeshare.com/health
+curl.exe https://api.getvibeshare.com/api/info
+curl.exe https://app.getvibeshare.com
 ```
 
-아이폰 연결 전 네트워크 진단:
+## 장애 시 바로 볼 순서
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\check-local-network.ps1
-```
+1. `https://api.getvibeshare.com/health`
+2. `https://api.getvibeshare.com/api/info`
+3. `https://app.getvibeshare.com`
+4. Railway API 로그
+5. 브라우저 F12 Network/Console
+6. Cloudflare Pages 최근 배포
+7. R2 CORS / bucket / key
+8. DNS
 
-## 웹이 안 열릴 때
+## 홍보 직전 결론
 
-아래 한 줄로 오래된 dev 프로세스, 포트, Docker infra를 정리하고 다시 올립니다.
+아래가 모두 참이면 홍보만 남은 상태입니다.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\start-production-like.ps1 -ResetInfra
-```
+- 공개 주소 접속 가능
+- QR 연결 가능
+- 양방향 파일 전송 가능
+- 운영 로그/헬스체크 확인 가능
+- 사용자 안내 문서 있음
+- FAQ 있음
+- 베타 초대 문구 있음
+- 지원 템플릿 있음
+- 운영 체크리스트 있음
+- 홍보 자료 있음
 
-## 전체 검증
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\run-full-check.ps1
-```
-
-통과 범위:
-
-- `npm install`
-- `npm test`
-- integration smoke
-- MinIO smoke
-- cleanup
-- web build
-- Expo iOS export
-- Docker infra
-- DB migration
-- `/`, `/health`, `/admin/health`, `/admin/status`, `/api/info`
-- configured driver integration smoke
-
-## 배포 준비 문서
-
-```text
-docs/deployment.md
-docs/launch/staging-handoff.md
-docs/launch/staging-deploy-checklist.md
-docs/launch/railway-api-service.md
-docs/launch/mobile-build-handoff.md
-docs/launch/store-submission-checklist.md
-docs/launch/app-store-copy.md
-docs/launch/play-store-copy.md
-BETA_STABLE_STATUS.md
-GITHUB_UPLOAD_CHECKLIST.md
-OWNER_ONLY_FINAL_STEPS.md
-```
+현재 목표는 기능 추가가 아니라 운영 마감, 사용자 안내, 지원 템플릿, 홍보 직전 자산 정리입니다.

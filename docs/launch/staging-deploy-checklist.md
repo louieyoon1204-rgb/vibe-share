@@ -1,4 +1,4 @@
-# Staging Deploy Checklist
+﻿# Staging Deploy Checklist
 
 Use this after the local beta stable gate passes.
 
@@ -6,10 +6,10 @@ For the Railway API service, use the repository root as the source and let `/rai
 
 ## 1. Required External Resources
 
-- DNS control for `vibeshare.app`
-- Static hosting for `staging.vibeshare.app`
-- Static hosting for `app-staging.vibeshare.app`
-- Node.js hosting for `api-staging.vibeshare.app`
+- DNS control for `getvibeshare.com`
+- Static hosting for `staging.getvibeshare.com`
+- Static hosting for `app-staging.getvibeshare.com`
+- Node.js hosting for `api-staging.getvibeshare.com`
 - Hosted PostgreSQL
 - Hosted Redis
 - S3-compatible object storage bucket
@@ -19,9 +19,9 @@ For the Railway API service, use the repository root as the source and let `/rai
 ## 2. DNS Targets
 
 ```text
-staging.vibeshare.app      -> staging site host
-app-staging.vibeshare.app  -> staging web app host
-api-staging.vibeshare.app  -> staging API host
+staging.getvibeshare.com      -> staging site host
+app-staging.getvibeshare.com  -> staging web app host
+api-staging.getvibeshare.com  -> staging API host
 ```
 
 ## 3. API Staging Environment
@@ -32,14 +32,14 @@ Required values:
 
 ```text
 APP_MODE=production
-CORS_ORIGIN=https://app-staging.vibeshare.app
+CORS_ORIGIN=https://app-staging.getvibeshare.com
 DATABASE_DRIVER=postgres
 CACHE_DRIVER=redis
 SOCKET_IO_ADAPTER=redis
 STORAGE_DRIVER=s3
-PUBLIC_SITE_URL=https://staging.vibeshare.app
-PUBLIC_WEB_APP_URL=https://app-staging.vibeshare.app
-PUBLIC_API_URL=https://api-staging.vibeshare.app
+PUBLIC_SITE_URL=https://staging.getvibeshare.com
+PUBLIC_WEB_APP_URL=https://app-staging.getvibeshare.com
+PUBLIC_API_URL=https://api-staging.getvibeshare.com
 DATABASE_URL=<hosted postgres url>
 REDIS_URL=<hosted redis url>
 S3_ENDPOINT=https://YOUR_ACCOUNT_ID.r2.cloudflarestorage.com
@@ -57,7 +57,7 @@ REQUIRE_DEVICE_TRUST=true
 ## 4. Web Staging Environment
 
 ```text
-VITE_SERVER_URL=https://api-staging.vibeshare.app
+VITE_SERVER_URL=https://api-staging.getvibeshare.com
 ```
 
 ## 5. Deploy Order
@@ -65,20 +65,20 @@ VITE_SERVER_URL=https://api-staging.vibeshare.app
 1. Create hosted PostgreSQL, Redis, and S3 bucket.
 2. Put staging secrets into the API host.
 3. Deploy API.
-4. Point `api-staging.vibeshare.app` to the API host and enable TLS.
+4. Point `api-staging.getvibeshare.com` to the API host and enable TLS.
 5. Run database migration against staging PostgreSQL.
-6. Build web with `VITE_SERVER_URL=https://api-staging.vibeshare.app`.
+6. Build web with `VITE_SERVER_URL=https://api-staging.getvibeshare.com`.
 7. Deploy web app.
-8. Point `app-staging.vibeshare.app` to the web host and enable TLS.
+8. Point `app-staging.getvibeshare.com` to the web host and enable TLS.
 9. Deploy the staging site.
-10. Point `staging.vibeshare.app` to the site host and enable TLS.
+10. Point `staging.getvibeshare.com` to the site host and enable TLS.
 
 ## 6. Staging Health Checks
 
 ```powershell
-curl.exe https://api-staging.vibeshare.app/health
-curl.exe https://api-staging.vibeshare.app/api/info
-curl.exe https://api-staging.vibeshare.app/admin/status -H "Authorization: Bearer <ADMIN_TOKEN>"
+curl.exe https://api-staging.getvibeshare.com/health
+curl.exe https://api-staging.getvibeshare.com/api/info
+curl.exe https://api-staging.getvibeshare.com/admin/status -H "Authorization: Bearer <ADMIN_TOKEN>"
 ```
 
 Expected:
@@ -88,13 +88,13 @@ Expected:
 - `realtime.active` is `redis`
 - `storage.active` is `s3`
 - `fallbackWarnings` is empty
-- `mobileServerUrl` is `https://api-staging.vibeshare.app`
-- `mobileWebUrl` is `https://app-staging.vibeshare.app`
+- `mobileServerUrl` is `https://api-staging.getvibeshare.com`
+- `mobileWebUrl` is `https://app-staging.getvibeshare.com`
 - no mobile-facing URL contains localhost or a private LAN host
 
 ## 7. Staging Product Test
 
-1. Open `https://app-staging.vibeshare.app` on PC.
+1. Open `https://app-staging.getvibeshare.com` on PC.
 2. Confirm build/version footer is visible.
 3. Scan the QR with phone camera.
 4. Confirm mobile web opens over HTTPS.

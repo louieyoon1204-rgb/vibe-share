@@ -1,4 +1,4 @@
-# Privacy Policy Outline
+﻿# Privacy Policy Outline
 
 This is a product/legal outline, not legal advice.
 
@@ -55,8 +55,8 @@ Before public launch, define:
 ## Required public URLs
 
 ```text
-https://vibeshare.app/privacy
-https://vibeshare.app/terms
-https://vibeshare.app/support
-https://vibeshare.app/security
+https://getvibeshare.com/privacy
+https://getvibeshare.com/terms
+https://getvibeshare.com/support
+https://getvibeshare.com/security
 ```

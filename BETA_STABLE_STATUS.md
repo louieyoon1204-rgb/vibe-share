@@ -70,7 +70,7 @@ This runs install, tests, MinIO smoke, web build, and local network diagnostics.
 
 Staging can start when these external values exist:
 
-- DNS targets for `staging.vibeshare.app`, `app-staging.vibeshare.app`, `api-staging.vibeshare.app`
+- DNS targets for `staging.getvibeshare.com`, `app-staging.getvibeshare.com`, `api-staging.getvibeshare.com`
 - Hosted PostgreSQL
 - Hosted Redis
 - S3-compatible bucket
