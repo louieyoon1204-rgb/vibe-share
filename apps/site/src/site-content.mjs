@@ -1,6 +1,7 @@
 export const BASE_URL = "https://getvibeshare.com";
 export const APP_URL = "https://app.getvibeshare.com";
 export const CONTACT_EMAIL = "support@getvibeshare.com";
+const CONTACT_EMAIL_DISPLAY = CONTACT_EMAIL.replace("@", " [at] ");
 export const ADSENSE_CLIENT_ID = "ca-pub-2582922243814482";
 export const ADS_TXT_CONTENT = "google.com, pub-2582922243814482, DIRECT, f08c47fec0942fa0";
 
@@ -288,7 +289,7 @@ export const pages = [
       </section>
       <section class="section">
         <h2>문의</h2>
-        <p>개인정보 관련 문의는 <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a> 으로 보낼 수 있습니다.</p>
+        <p>개인정보 관련 문의는 <span class="contact-email">${CONTACT_EMAIL_DISPLAY}</span> 으로 보낼 수 있습니다. 메일을 보낼 때 [at]을 @로 바꿔 주세요.</p>
       </section>
     `
   },
@@ -336,7 +337,8 @@ export const pages = [
       <section class="section split">
         <div>
           <h2>문의 이메일</h2>
-          <p><a class="contact-email" href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a></p>
+          <p><span class="contact-email">${CONTACT_EMAIL_DISPLAY}</span></p>
+          <p>메일을 보낼 때 [at]을 @로 바꿔 주세요.</p>
           <p>운영 문의, 오류 제보, 개인정보 관련 문의를 이 주소로 보낼 수 있습니다.</p>
         </div>
         <div class="note">

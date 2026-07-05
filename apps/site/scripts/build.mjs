@@ -30,6 +30,7 @@ for (const page of pages) {
 await fs.copyFile(path.join(srcDir, "styles.css"), path.join(distDir, "styles.css"));
 await fs.copyFile(path.join(srcDir, "_headers"), path.join(distDir, "_headers"));
 await fs.copyFile(path.join(srcDir, "_redirects"), path.join(distDir, "_redirects"));
+await fs.copyFile(path.join(srcDir, "_worker.js"), path.join(distDir, "_worker.js"));
 await fs.writeFile(path.join(distDir, "robots.txt"), buildRobots(), "utf8");
 await fs.writeFile(path.join(distDir, "sitemap.xml"), buildSitemap(), "utf8");
 await fs.writeFile(path.join(distDir, "ads.txt"), `${ADS_TXT_CONTENT}\n`, "utf8");

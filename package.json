@@ -28,7 +28,8 @@
     "staging:readiness": "powershell -ExecutionPolicy Bypass -File scripts/staging-readiness.ps1",
     "build:web:public": "powershell -ExecutionPolicy Bypass -File scripts/build-public-web.ps1",
     "build:site:public": "npm run build -w apps/site",
-    "github:readiness": "powershell -ExecutionPolicy Bypass -File scripts/github-readiness.ps1"
+    "github:readiness": "powershell -ExecutionPolicy Bypass -File scripts/github-readiness.ps1",
+    "ops:public-check": "powershell -ExecutionPolicy Bypass -File scripts/public-ops-check.ps1"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

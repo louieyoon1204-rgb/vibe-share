@@ -21,6 +21,7 @@ const requiredFiles = [
   "ads.txt",
   "_headers",
   "_redirects",
+  "_worker.js",
   ...requiredPagePaths.filter((item) => item !== "/").map((item) => `${item.slice(1)}.html`)
 ];
 
