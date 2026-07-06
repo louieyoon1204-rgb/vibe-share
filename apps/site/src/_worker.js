@@ -7,7 +7,15 @@ const CANONICAL_PAGE_PATHS = new Set([
   "/security",
   "/privacy",
   "/terms",
-  "/contact"
+  "/contact",
+  "/guides",
+  "/guides/pc-to-phone-file-transfer",
+  "/guides/qr-file-transfer",
+  "/guides/kakao-email-cable-alternative",
+  "/guides/iphone-to-pc-photo-transfer",
+  "/guides/android-to-pc-file-transfer",
+  "/guides/file-transfer-security-checklist",
+  "/guides/troubleshooting-qr-file-transfer"
 ]);
 
 export default {

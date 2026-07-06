@@ -15,5 +15,13 @@ https://www.getvibeshare.com/* https://getvibeshare.com/:splat 301!
 /privacy/ /privacy 301!
 /terms/ /terms 301!
 /contact/ /contact 301!
+/guides/ /guides 301!
+/guides/pc-to-phone-file-transfer/ /guides/pc-to-phone-file-transfer 301!
+/guides/qr-file-transfer/ /guides/qr-file-transfer 301!
+/guides/kakao-email-cable-alternative/ /guides/kakao-email-cable-alternative 301!
+/guides/iphone-to-pc-photo-transfer/ /guides/iphone-to-pc-photo-transfer 301!
+/guides/android-to-pc-file-transfer/ /guides/android-to-pc-file-transfer 301!
+/guides/file-transfer-security-checklist/ /guides/file-transfer-security-checklist 301!
+/guides/troubleshooting-qr-file-transfer/ /guides/troubleshooting-qr-file-transfer 301!
 /support /contact 301
 /support/ /contact 301

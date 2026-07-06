@@ -24,6 +24,7 @@ for (const page of pages) {
   const filePath = page.path === "/"
     ? path.join(distDir, "index.html")
     : path.join(distDir, `${page.path.slice(1)}.html`);
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, buildPageHtml(page), "utf8");
 }
 
