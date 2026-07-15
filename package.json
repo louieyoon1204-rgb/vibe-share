@@ -24,6 +24,7 @@
     "smoke:integration": "node scripts/integration-smoke.mjs",
     "smoke:prod-foundation": "node scripts/production-foundation-smoke.mjs",
     "smoke:minio": "node scripts/minio-smoke.mjs",
+    "audit:site-content": "node scripts/site-content-quality-audit.mjs",
     "test": "npm run smoke && npm run smoke:mobile-url && npm run smoke:r2-config && npm run smoke:integration && npm run smoke:prod-foundation",
     "staging:readiness": "powershell -ExecutionPolicy Bypass -File scripts/staging-readiness.ps1",
     "build:web:public": "powershell -ExecutionPolicy Bypass -File scripts/build-public-web.ps1",

@@ -15,7 +15,11 @@ const CANONICAL_PAGE_PATHS = new Set([
   "/guides/iphone-to-pc-photo-transfer",
   "/guides/android-to-pc-file-transfer",
   "/guides/file-transfer-security-checklist",
-  "/guides/troubleshooting-qr-file-transfer"
+  "/guides/troubleshooting-qr-file-transfer",
+  "/guides/how-vibe-share-was-built",
+  "/guides/real-world-transfer-test-notes",
+  "/guides/file-transfer-method-comparison",
+  "/guides/data-lifecycle-and-privacy"
 ]);
 
 export default {
